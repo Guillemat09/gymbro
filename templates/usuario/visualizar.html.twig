@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card">
+        <div class="card-header">
+            Datos del usuario
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">ID</dt>
+                <dd class="col-sm-9">{{ usuario.id }}</dd>
+
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">{{ usuario.email }}</dd>
+
+                <dt class="col-sm-3">Nombre</dt>
+                <dd class="col-sm-9">{{ usuario.nombre }}</dd>
+
+                <dt class="col-sm-3">Primer apellido</dt>
+                <dd class="col-sm-9">{{ usuario.apellido1 }}</dd>
+
+                <dt class="col-sm-3">Segundo apellido</dt>
+                <dd class="col-sm-9">{{ usuario.apellido2 }}</dd>
+
+                <dt class="col-sm-3">Teléfono</dt>
+                <dd class="col-sm-9">{{ usuario.telefono }}</dd>
+
+                <dt class="col-sm-3">Dirección</dt>
+                <dd class="col-sm-9">{{ usuario.direccion }}</dd>
+            </dl>
+            <a href="{{ path('app_usuario') }}" class="btn btn-secondary mt-3">Volver</a>
+        </div>
+    </div>
+{% endblock %}
