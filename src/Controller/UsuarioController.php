@@ -98,4 +98,77 @@ class UsuarioController extends AbstractController
             'titulo' => 'Visualizar usuario',
         ]);
     }
+
+    #[Route('/usuario/{id}/editar', name: 'usuario_editar')]
+    public function editar(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $usuario = $em->getRepository(Usuario::class)->find($id);
+
+        if (!$usuario) {
+            throw $this->createNotFoundException('Usuario no encontrado');
+        }
+
+        $form = $this->createFormBuilder($usuario)
+            ->add('email', EmailType::class, [
+                'label' => 'Email',
+                'attr' => ['class' => 'form-control'],
+            ])
+            // Se elimina el campo de contraseña
+            ->add('nombre', TextType::class, [
+                'label' => 'Nombre',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('apellido1', TextType::class, [
+                'label' => 'Primer apellido',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('apellido2', TextType::class, [
+                'label' => 'Segundo apellido',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('telefono', TextType::class, [
+                'label' => 'Teléfono',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('direccion', TextType::class, [
+                'label' => 'Dirección',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('guardar', SubmitType::class, [
+                'label' => 'Guardar cambios',
+                'attr' => ['class' => 'btn btn-primary mt-3'],
+            ])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // La contraseña se mantiene igual, no se modifica
+            $em->flush();
+            return $this->redirectToRoute('app_usuario');
+        }
+
+        return $this->render('usuario/editar.html.twig', [
+            'form' => $form->createView(),
+            'titulo' => 'Editar usuario',
+        ]);
+    }
+
+    #[Route('/usuario/{id}/eliminar', name: 'usuario_eliminar', methods: ['POST'])]
+    public function eliminar(int $id, EntityManagerInterface $em): Response
+    {
+        $usuario = $em->getRepository(Usuario::class)->find($id);
+
+        if (!$usuario) {
+            throw $this->createNotFoundException('Usuario no encontrado');
+        }
+
+        $em->remove($usuario);
+        $em->flush();
+
+        return $this->redirectToRoute('app_usuario');
+    }
 }
