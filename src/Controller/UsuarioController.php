@@ -2,18 +2,22 @@
 
 namespace App\Controller;
 
+use App\Entity\Usuario;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Doctrine\ORM\EntityManagerInterface;
 
 class UsuarioController extends AbstractController
 {
     #[Route('/usuario', name: 'app_usuario')]
-    public function index(): Response
+    public function index(EntityManagerInterface $em): Response
     {
+        $usuarios = $em->getRepository(Usuario::class)->findAll();
+
         return $this->render('usuario/index.html.twig', [
-            'titulo' => 'GymBro Fitness Center',
-            'descripcion' => 'El mejor gimnasio de la ciudad, equipado con la última tecnología y entrenadores profesionales para ayudarte a alcanzar tus objetivos.',
+            'usuarios' => $usuarios,
+            'titulo' => 'GymBro - Usuarios',
         ]);
     }
 }
