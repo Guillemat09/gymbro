@@ -12,6 +12,10 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use App\Entity\Alumno;
+use App\Entity\Profesor;
+use App\Entity\Administrador;
 
 class UsuarioController extends AbstractController
 {
@@ -63,6 +67,18 @@ class UsuarioController extends AbstractController
                 'required' => false,
                 'attr' => ['class' => 'form-control'],
             ])
+            ->add('tipo', ChoiceType::class, [
+                'label' => 'Tipo de usuario',
+                'choices' => [
+                    'Alumno' => 'alumno',
+                    'Profesor' => 'profesor',
+                    'Administrador' => 'administrador',
+                ],
+                'expanded' => false,
+                'multiple' => false,
+                'attr' => ['class' => 'form-select'],
+                'required' => true,
+            ])
             ->add('guardar', SubmitType::class, [
                 'label' => 'Guardar usuario',
                 'attr' => ['class' => 'btn btn-primary mt-3'],
@@ -72,7 +88,50 @@ class UsuarioController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $tipo = $form->get('tipo')->getData();
+
             $em->persist($usuario);
+            $em->flush();
+
+            if ($tipo === 'alumno') {
+                $fechaNacimiento = $request->request->get('fechaNacimiento');
+                $peso = $request->request->get('peso');
+                $altura = $request->request->get('altura');
+                $sexo = $request->request->get('sexo');
+
+                if (!$fechaNacimiento || !$peso || !$altura || !$sexo) {
+                    $this->addFlash('error', 'Todos los campos de alumno son obligatorios.');
+                    return $this->redirectToRoute('usuario_nuevo');
+                }
+
+                $alumno = new Alumno();
+                $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
+                $alumno->setPeso((int)$peso);
+                $alumno->setAltura((int)$altura);
+                $alumno->setSexo($sexo);
+                $alumno->setUsuario($usuario);
+
+                $em->persist($alumno);
+            } elseif ($tipo === 'profesor') {
+                $especialidad = $request->request->get('especialidad');
+                if (!$especialidad) {
+                    $this->addFlash('error', 'La especialidad es obligatoria para el profesor.');
+                    return $this->redirectToRoute('usuario_nuevo');
+                }
+                $profesor = new Profesor();
+                $profesor->setEspecialidad($especialidad);
+                $profesor->setUsuario($usuario);
+
+                $em->persist($profesor);
+            } elseif ($tipo === 'administrador') {
+                $activo = $request->request->get('activo') === 'on' ? true : false;
+                $admin = new Administrador();
+                $admin->setActivo($activo);
+                $admin->setUsuario($usuario);
+
+                $em->persist($admin);
+            }
+
             $em->flush();
 
             return $this->redirectToRoute('app_usuario');

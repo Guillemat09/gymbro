@@ -18,6 +18,7 @@
                 <th>Apellido 2</th>
                 <th>Teléfono</th>
                 <th>Dirección</th>
+                <th>Tipo</th>
                 <th>Opciones</th>
             </tr>
         </thead>
@@ -31,6 +32,7 @@
                     <td>{{ usuario.apellido2 }}</td>
                     <td>{{ usuario.telefono }}</td>
                     <td>{{ usuario.direccion }}</td>
+                    <td>{{ usuario.tipo|capitalize }}</td>
                     <td class="text-center">
                         <a href="{{ path('usuario_visualizar', {'id': usuario.id}) }}" class="btn btn-outline-primary btn-sm" title="Visualizar">
                             <i class="bi bi-eye"></i>
@@ -38,13 +40,10 @@
                         <a href="{{ path('usuario_editar', {'id': usuario.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <!-- Botón para mostrar el modal de eliminación -->
                         <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
                                 data-bs-toggle="modal" data-bs-target="#modalEliminar{{ usuario.id }}">
                             <i class="bi bi-trash"></i>
                         </button>
-
-                        <!-- Modal Bootstrap de confirmación -->
                         <div class="modal fade" id="modalEliminar{{ usuario.id }}" tabindex="-1" aria-labelledby="modalLabel{{ usuario.id }}" aria-hidden="true">
                           <div class="modal-dialog">
                             <div class="modal-content">
@@ -68,7 +67,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="8" class="text-center">No hay usuarios registrados.</td>
+                    <td colspan="9" class="text-center">No hay usuarios registrados.</td>
                 </tr>
             {% endfor %}
         </tbody>

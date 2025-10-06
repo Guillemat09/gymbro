@@ -34,6 +34,9 @@ class Usuario
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $direccion = null;
 
+    #[ORM\Column(length: 20)]
+    private ?string $tipo = null;
+
     #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
     private ?Profesor $profesor = null;
 
@@ -128,6 +131,18 @@ class Usuario
     public function setDireccion(?string $direccion): static
     {
         $this->direccion = $direccion;
+
+        return $this;
+    }
+
+    public function getTipo(): ?string
+    {
+        return $this->tipo;
+    }
+
+    public function setTipo(string $tipo): static
+    {
+        $this->tipo = $tipo;
 
         return $this;
     }
