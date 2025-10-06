@@ -225,6 +225,24 @@ class UsuarioController extends AbstractController
             throw $this->createNotFoundException('Usuario no encontrado');
         }
 
+        // Eliminar registro asociado según el tipo
+        if ($usuario->getTipo() === 'alumno' && method_exists($usuario, 'getAlumno')) {
+            $alumno = $usuario->getAlumno();
+            if ($alumno) {
+                $em->remove($alumno);
+            }
+        } elseif ($usuario->getTipo() === 'profesor' && method_exists($usuario, 'getProfesor')) {
+            $profesor = $usuario->getProfesor();
+            if ($profesor) {
+                $em->remove($profesor);
+            }
+        } elseif ($usuario->getTipo() === 'administrador' && method_exists($usuario, 'getAdministrador')) {
+            $admin = $usuario->getAdministrador();
+            if ($admin) {
+                $em->remove($admin);
+            }
+        }
+
         $em->remove($usuario);
         $em->flush();
 
