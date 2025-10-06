@@ -34,6 +34,15 @@ class Usuario
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $direccion = null;
 
+    #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
+    private ?Profesor $profesor = null;
+
+    #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
+    private ?Alumno $alumno = null;
+
+    #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
+    private ?Administrador $administrador = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -119,6 +128,57 @@ class Usuario
     public function setDireccion(?string $direccion): static
     {
         $this->direccion = $direccion;
+
+        return $this;
+    }
+
+    public function getProfesor(): ?Profesor
+    {
+        return $this->profesor;
+    }
+
+    public function setProfesor(Profesor $profesor): static
+    {
+        // set the owning side of the relation if necessary
+        if ($profesor->getUsuario() !== $this) {
+            $profesor->setUsuario($this);
+        }
+
+        $this->profesor = $profesor;
+
+        return $this;
+    }
+
+    public function getAlumno(): ?Alumno
+    {
+        return $this->alumno;
+    }
+
+    public function setAlumno(Alumno $alumno): static
+    {
+        // set the owning side of the relation if necessary
+        if ($alumno->getUsuario() !== $this) {
+            $alumno->setUsuario($this);
+        }
+
+        $this->alumno = $alumno;
+
+        return $this;
+    }
+
+    public function getAdministrador(): ?Administrador
+    {
+        return $this->administrador;
+    }
+
+    public function setAdministrador(Administrador $administrador): static
+    {
+        // set the owning side of the relation if necessary
+        if ($administrador->getUsuario() !== $this) {
+            $administrador->setUsuario($this);
+        }
+
+        $this->administrador = $administrador;
 
         return $this;
     }
