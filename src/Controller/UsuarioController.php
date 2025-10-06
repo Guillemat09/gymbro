@@ -172,7 +172,6 @@ class UsuarioController extends AbstractController
                 'label' => 'Email',
                 'attr' => ['class' => 'form-control'],
             ])
-            // Se elimina el campo de contraseña
             ->add('nombre', TextType::class, [
                 'label' => 'Nombre',
                 'attr' => ['class' => 'form-control'],
@@ -205,7 +204,27 @@ class UsuarioController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // La contraseña se mantiene igual, no se modifica
+            // Actualiza los datos adicionales según el tipo
+            if ($usuario->getTipo() === 'alumno' && $usuario->getAlumno()) {
+                $alumno = $usuario->getAlumno();
+                $fechaNacimiento = $request->request->get('fechaNacimiento');
+                $peso = $request->request->get('peso');
+                $altura = $request->request->get('altura');
+                $sexo = $request->request->get('sexo');
+                if ($fechaNacimiento) $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
+                if ($peso) $alumno->setPeso((int)$peso);
+                if ($altura) $alumno->setAltura((int)$altura);
+                if ($sexo) $alumno->setSexo($sexo);
+            } elseif ($usuario->getTipo() === 'profesor' && $usuario->getProfesor()) {
+                $profesor = $usuario->getProfesor();
+                $especialidad = $request->request->get('especialidad');
+                if ($especialidad) $profesor->setEspecialidad($especialidad);
+            } elseif ($usuario->getTipo() === 'administrador' && $usuario->getAdministrador()) {
+                $admin = $usuario->getAdministrador();
+                $activo = $request->request->get('activo') === 'on' ? true : false;
+                $admin->setActivo($activo);
+            }
+
             $em->flush();
             return $this->redirectToRoute('app_usuario');
         }
@@ -213,6 +232,7 @@ class UsuarioController extends AbstractController
         return $this->render('usuario/editar.html.twig', [
             'form' => $form->createView(),
             'titulo' => 'Editar usuario',
+            'usuario' => $usuario, // <-- Añade esta línea
         ]);
     }
 

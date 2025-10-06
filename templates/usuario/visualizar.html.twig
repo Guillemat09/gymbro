@@ -30,7 +30,46 @@
 
                 <dt class="col-sm-3">Dirección</dt>
                 <dd class="col-sm-9">{{ usuario.direccion }}</dd>
+
+                <dt class="col-sm-3">Tipo</dt>
+                <dd class="col-sm-9">{{ usuario.tipo|capitalize }}</dd>
             </dl>
+
+            {% if usuario.tipo == 'alumno' and usuario.alumno %}
+                <hr>
+                <h5>Datos de Alumno</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Fecha de nacimiento</dt>
+                    <dd class="col-sm-9">{{ usuario.alumno.fechaNacimiento|date('d/m/Y') }}</dd>
+                    <dt class="col-sm-3">Peso</dt>
+                    <dd class="col-sm-9">{{ usuario.alumno.peso }} kg</dd>
+                    <dt class="col-sm-3">Altura</dt>
+                    <dd class="col-sm-9">{{ usuario.alumno.altura }} cm</dd>
+                    <dt class="col-sm-3">Sexo</dt>
+                    <dd class="col-sm-9">{{ usuario.alumno.sexo|capitalize }}</dd>
+                </dl>
+            {% elseif usuario.tipo == 'profesor' and usuario.profesor %}
+                <hr>
+                <h5>Datos de Profesor</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Especialidad</dt>
+                    <dd class="col-sm-9">{{ usuario.profesor.especialidad }}</dd>
+                </dl>
+            {% elseif usuario.tipo == 'administrador' and usuario.administrador %}
+                <hr>
+                <h5>Datos de Administrador</h5>
+                <dl class="row">
+                    <dt class="col-sm-3">Activo</dt>
+                    <dd class="col-sm-9">
+                        {% if usuario.administrador.activo %}
+                            <span class="badge bg-success">Sí</span>
+                        {% else %}
+                            <span class="badge bg-danger">No</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            {% endif %}
+
             <a href="{{ path('app_usuario') }}" class="btn btn-secondary mt-3">Volver</a>
         </div>
     </div>
