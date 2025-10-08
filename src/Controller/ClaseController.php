@@ -158,4 +158,34 @@ final class ClaseController extends AbstractController
             'titulo' => 'Editar clase',
         ]);
     }
+
+    #[Route('/clase/{id}', name: 'clase_visualizar')]
+    public function visualizar(int $id, EntityManagerInterface $em): Response
+    {
+        $clase = $em->getRepository(Clase::class)->find($id);
+
+        if (!$clase) {
+            throw $this->createNotFoundException('Clase no encontrada');
+        }
+
+        return $this->render('clase/visualizar.html.twig', [
+            'clase' => $clase,
+            'titulo' => 'Visualizar clase',
+        ]);
+    }
+
+    #[Route('/clase/{id}/eliminar', name: 'clase_eliminar', methods: ['POST'])]
+    public function eliminar(int $id, EntityManagerInterface $em): Response
+    {
+        $clase = $em->getRepository(Clase::class)->find($id);
+
+        if (!$clase) {
+            throw $this->createNotFoundException('Clase no encontrada');
+        }
+
+        $em->remove($clase);
+        $em->flush();
+
+        return $this->redirectToRoute('app_clase');
+    }
 }

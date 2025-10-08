@@ -1,0 +1,47 @@
+{# filepath: d:\tfg\gymbro\templates\clase\visualizar.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card">
+        <div class="card-header">
+            Datos de la clase
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">ID</dt>
+                <dd class="col-sm-9">{{ clase.id }}</dd>
+
+                <dt class="col-sm-3">Nombre</dt>
+                <dd class="col-sm-9">{{ clase.nombre }}</dd>
+
+                <dt class="col-sm-3">Fecha</dt>
+                <dd class="col-sm-9">{{ clase.fecha|date('d/m/Y') }}</dd>
+
+                <dt class="col-sm-3">Hora</dt>
+                <dd class="col-sm-9">{{ clase.hora|date('H:i') }}</dd>
+
+                <dt class="col-sm-3">Duración</dt>
+                <dd class="col-sm-9">{{ clase.duracion }} minutos</dd>
+
+                <dt class="col-sm-3">Lugar</dt>
+                <dd class="col-sm-9">{{ clase.lugar }}</dd>
+
+                <dt class="col-sm-3">Límite de alumnos</dt>
+                <dd class="col-sm-9">{{ clase.limite }}</dd>
+
+                <dt class="col-sm-3">Profesor</dt>
+                <dd class="col-sm-9">
+                    {% if clase.profesor and clase.profesor.usuario %}
+                        {{ clase.profesor.usuario.nombre }} {{ clase.profesor.usuario.apellido1 }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </dd>
+            </dl>
+            <a href="{{ path('app_clase') }}" class="btn btn-secondary mt-3">Volver</a>
+        </div>
+    </div>
+{% endblock %}
