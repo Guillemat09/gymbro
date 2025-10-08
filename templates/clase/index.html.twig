@@ -17,6 +17,7 @@
                 <th>Lugar</th>
                 <th>Límite</th>
                 <th>Profesor</th>
+                <th>Opciones</th>
             </tr>
         </thead>
         <tbody>
@@ -36,10 +37,15 @@
                             -
                         {% endif %}
                     </td>
+                    <td class="text-center">
+                        <a href="{{ path('clase_editar', {'id': clase.id}) }}" class="btn btn-outline-warning btn-sm" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="8" class="text-center">No hay clases registradas.</td>
+                    <td colspan="9" class="text-center">No hay clases registradas.</td>
                 </tr>
             {% endfor %}
         </tbody>

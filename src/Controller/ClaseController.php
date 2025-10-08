@@ -92,4 +92,70 @@ final class ClaseController extends AbstractController
             'titulo' => 'Nueva clase',
         ]);
     }
+
+    #[Route('/clase/{id}/editar', name: 'clase_editar')]
+    public function editar(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $clase = $em->getRepository(Clase::class)->find($id);
+
+        if (!$clase) {
+            throw $this->createNotFoundException('Clase no encontrada');
+        }
+
+        $form = $this->createFormBuilder($clase)
+            ->add('nombre', TextType::class, [
+                'label' => 'Nombre de la clase',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('fecha', DateType::class, [
+                'label' => 'Fecha',
+                'widget' => 'single_text',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('hora', TimeType::class, [
+                'label' => 'Hora',
+                'widget' => 'single_text',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('duracion', IntegerType::class, [
+                'label' => 'Duración (minutos)',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('lugar', TextType::class, [
+                'label' => 'Lugar',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('limite', IntegerType::class, [
+                'label' => 'Límite de alumnos',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('profesor', EntityType::class, [
+                'class' => Profesor::class,
+                'choice_label' => function (Profesor $profesor) {
+                    $usuario = $profesor->getUsuario();
+                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() : 'Sin nombre';
+                },
+                'label' => 'Profesor',
+                'placeholder' => 'Selecciona un profesor',
+                'attr' => ['class' => 'form-select'],
+            ])
+            ->add('guardar', SubmitType::class, [
+                'label' => 'Guardar cambios',
+                'attr' => ['class' => 'btn btn-primary mt-3'],
+            ])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $em->flush();
+            return $this->redirectToRoute('app_clase');
+        }
+
+        return $this->render('clase/editar.html.twig', [
+            'form' => $form->createView(),
+            'titulo' => 'Editar clase',
+        ]);
+    }
 }
