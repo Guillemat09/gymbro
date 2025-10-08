@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-4 mb-3">{{ titulo }}</h1>
+    <a href="{{ path('clase_nueva') }}" class="btn btn-success mb-3">Nueva clase</a>
+
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Duración (min)</th>
+                <th>Lugar</th>
+                <th>Límite</th>
+                <th>Profesor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for clase in clases %}
+                <tr>
+                    <td>{{ clase.id }}</td>
+                    <td>{{ clase.nombre }}</td>
+                    <td>{{ clase.fecha|date('d/m/Y') }}</td>
+                    <td>{{ clase.hora|date('H:i') }}</td>
+                    <td>{{ clase.duracion }}</td>
+                    <td>{{ clase.lugar }}</td>
+                    <td>{{ clase.limite }}</td>
+                    <td>
+                        {% if clase.profesor and clase.profesor.usuario %}
+                            {{ clase.profesor.usuario.nombre }} {{ clase.profesor.usuario.apellido1 }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay clases registradas.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,20 @@
+{# filepath: d:\tfg\gymbro\templates\clase\nueva.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card p-4">
+        {{ form_start(form) }}
+            {{ form_row(form.nombre) }}
+            {{ form_row(form.fecha) }}
+            {{ form_row(form.hora) }}
+            {{ form_row(form.duracion) }}
+            {{ form_row(form.lugar) }}
+            {{ form_row(form.limite) }}
+            {{ form_row(form.profesor) }}
+            {{ form_row(form.guardar) }}
+        {{ form_end(form) }}
+    </div>
+{% endblock %}
