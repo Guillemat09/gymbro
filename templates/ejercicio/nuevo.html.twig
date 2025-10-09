@@ -1,0 +1,18 @@
+{# filepath: d:\tfg\gymbro\templates\ejercicio\nuevo.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card p-4">
+        {{ form_start(form) }}
+            {{ form_row(form.nombre) }}
+            {{ form_row(form.descripcion) }}
+            {{ form_row(form.dificultad) }}
+            {{ form_row(form.musculo_principal) }}
+            {{ form_row(form.repeticiones) }}
+            {{ form_row(form.guardar) }}
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

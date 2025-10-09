@@ -1,0 +1,35 @@
+{# filepath: d:\tfg\gymbro\templates\ejercicio\visualizar.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card">
+        <div class="card-header">
+            Datos del ejercicio
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">ID</dt>
+                <dd class="col-sm-9">{{ ejercicio.id }}</dd>
+
+                <dt class="col-sm-3">Nombre</dt>
+                <dd class="col-sm-9">{{ ejercicio.nombre }}</dd>
+
+                <dt class="col-sm-3">Descripción</dt>
+                <dd class="col-sm-9">{{ ejercicio.descripcion }}</dd>
+
+                <dt class="col-sm-3">Dificultad</dt>
+                <dd class="col-sm-9">{{ ejercicio.dificultad }}</dd>
+
+                <dt class="col-sm-3">Músculo principal</dt>
+                <dd class="col-sm-9">{{ ejercicio.musculoPrincipal }}</dd>
+
+                <dt class="col-sm-3">Repeticiones</dt>
+                <dd class="col-sm-9">{{ ejercicio.repeticiones }}</dd>
+            </dl>
+            <a href="{{ path('app_ejercicio') }}" class="btn btn-secondary mt-3">Volver</a>
+        </div>
+    </div>
+{% endblock %}

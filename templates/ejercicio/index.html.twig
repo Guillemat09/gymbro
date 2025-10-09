@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-4 mb-3">{{ titulo }}</h1>
+    <a href="{{ path('ejercicio_nuevo') }}" class="btn btn-success mb-3">Nuevo ejercicio</a>
+
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Dificultad</th>
+                <th>Músculo principal</th>
+                <th>Repeticiones</th>
+                <th>Opciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ejercicio in ejercicios %}
+                <tr>
+                    <td>{{ ejercicio.id }}</td>
+                    <td>{{ ejercicio.nombre }}</td>
+                    <td>{{ ejercicio.descripcion }}</td>
+                    <td>{{ ejercicio.dificultad }}</td>
+                    <td>{{ ejercicio.musculoPrincipal }}</td>
+                    <td>{{ ejercicio.repeticiones }}</td>
+                    <td class="text-center">
+                        <a href="{{ path('ejercicio_visualizar', {'id': ejercicio.id}) }}" class="btn btn-outline-primary btn-sm" title="Visualizar">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ path('ejercicio_editar', {'id': ejercicio.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <!-- Botón para mostrar el modal de eliminación -->
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarEjercicio{{ ejercicio.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                        <!-- Modal Bootstrap de confirmación -->
+                        <div class="modal fade" id="modalEliminarEjercicio{{ ejercicio.id }}" tabindex="-1" aria-labelledby="modalLabelEjercicio{{ ejercicio.id }}" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabelEjercicio{{ ejercicio.id }}">Confirmar eliminación de ejercicio</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                              </div>
+                              <div class="modal-body">
+                                ¿Estás seguro de que deseas eliminar el ejercicio <strong>{{ ejercicio.nombre }}</strong>?
+                                <ul class="mt-2">
+                                    <li><strong>Descripción:</strong> {{ ejercicio.descripcion }}</li>
+                                    <li><strong>Dificultad:</strong> {{ ejercicio.dificultad }}</li>
+                                    <li><strong>Músculo principal:</strong> {{ ejercicio.musculoPrincipal }}</li>
+                                    <li><strong>Repeticiones:</strong> {{ ejercicio.repeticiones }}</li>
+                                </ul>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form method="post" action="{{ path('ejercicio_eliminar', {'id': ejercicio.id}) }}">
+                                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="text-center">No hay ejercicios registrados.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
