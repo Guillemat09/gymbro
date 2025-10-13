@@ -1,0 +1,90 @@
+{# filepath: d:\tfg\gymbro\templates\rutina\nueva.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card p-4">
+        {{ form_start(form) }}
+            {{ form_row(form.alumno) }}
+            {{ form_row(form.nombre) }}
+
+            <hr>
+            <h5>Ejercicios de la rutina</h5>
+            <div id="ejercicios-list">
+                {# Ejercicios añadidos se mostrarán aquí #}
+            </div>
+            <div class="row g-2 align-items-end mb-3" id="add-ejercicio-row">
+                <div class="col-md-6">
+                    <label for="ejercicio-select" class="form-label">Ejercicio</label>
+                    <select id="ejercicio-select" class="form-select">
+                        <option value="">Selecciona un ejercicio</option>
+                        {% for ejercicio in ejercicios %}
+                            <option value="{{ ejercicio.id }}">{{ ejercicio.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="repeticiones-input" class="form-label">Repeticiones</label>
+                    <input type="number" id="repeticiones-input" class="form-control" min="1">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary" id="add-ejercicio-btn">Añadir</button>
+                </div>
+            </div>
+
+            {{ form_row(form.guardar) }}
+        {{ form_end(form) }}
+    </div>
+
+    <script>
+        // JS para añadir ejercicios dinámicamente al formulario
+        document.addEventListener('DOMContentLoaded', function() {
+            const addBtn = document.getElementById('add-ejercicio-btn');
+            const ejercicioSelect = document.getElementById('ejercicio-select');
+            const repeticionesInput = document.getElementById('repeticiones-input');
+            const ejerciciosList = document.getElementById('ejercicios-list');
+
+            addBtn.addEventListener('click', function() {
+                const ejercicioId = ejercicioSelect.value;
+                const ejercicioText = ejercicioSelect.options[ejercicioSelect.selectedIndex].text;
+                const repeticiones = repeticionesInput.value;
+
+                if (!ejercicioId || !repeticiones || repeticiones < 1) {
+                    alert('Selecciona un ejercicio y pon un número de repeticiones válido.');
+                    return;
+                }
+
+                // Crear un elemento visual y los inputs ocultos
+                const orden = ejerciciosList.children.length + 1;
+                const div = document.createElement('div');
+                div.className = 'mb-2 border rounded p-2 bg-light d-flex justify-content-between align-items-center';
+                div.innerHTML = `
+                    <span><strong>${orden}.</strong> ${ejercicioText} - ${repeticiones} repeticiones</span>
+                    <button type="button" class="btn btn-danger btn-sm ms-2 remove-ejercicio">Eliminar</button>
+                    <input type="hidden" name="ejercicios[${orden - 1}][ejercicio]" value="${ejercicioId}">
+                    <input type="hidden" name="ejercicios[${orden - 1}][repeticiones]" value="${repeticiones}">
+                `;
+                ejerciciosList.appendChild(div);
+
+                // Limpiar campos
+                ejercicioSelect.value = '';
+                repeticionesInput.value = '';
+            });
+
+            // Eliminar ejercicio añadido
+            ejerciciosList.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-ejercicio')) {
+                    e.target.parentElement.remove();
+                    // Reordenar los ejercicios visualmente y los nombres de los inputs
+                    Array.from(ejerciciosList.children).forEach(function(child, idx) {
+                        child.querySelector('span').innerHTML = `<strong>${idx + 1}.</strong> ${child.querySelector('span').textContent.split('. ')[1]}`;
+                        child.querySelector('input[name^="ejercicios"]').name = `ejercicios[${idx}][ejercicio]`;
+                        child.querySelectorAll('input')[1].name = `ejercicios[${idx}][repeticiones]`;
+                    });
+                }
+            });
+        });
+    </script>
+{% endblock %}
