@@ -1,4 +1,4 @@
-{# filepath: d:\tfg\gymbro\templates\rutina\nueva.html.twig #}
+{# filepath: d:\tfg\gymbro\templates\rutina\editar.html.twig #}
 {% extends 'base.html.twig' %}
 
 {% block title %}{{ titulo }}{% endblock %}
@@ -13,7 +13,23 @@
             <hr>
             <h5>Ejercicios de la rutina</h5>
             <div id="ejercicios-list">
-                {# Ejercicios añadidos se mostrarán aquí #}
+                {# Mostrar ejercicios actuales #}
+                {% for rutinaEjercicio in ejerciciosRutina %}
+                    <div class="mb-2 border rounded p-2 bg-light d-flex justify-content-between align-items-center" data-text="{{ rutinaEjercicio.ejercicio.nombre }} - {{ rutinaEjercicio.repeticiones }} repeticiones">
+                        <span><strong>{{ loop.index }}.</strong> {{ rutinaEjercicio.ejercicio.nombre }} - {{ rutinaEjercicio.repeticiones }} repeticiones</span>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm move-up" title="Subir">
+                                <i class="bi bi-arrow-up"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm move-down ms-1" title="Bajar">
+                                <i class="bi bi-arrow-down"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm ms-2 remove-ejercicio">Eliminar</button>
+                        </div>
+                        <input type="hidden" name="ejercicios[{{ loop.index0 }}][ejercicio]" value="{{ rutinaEjercicio.ejercicio.id }}">
+                        <input type="hidden" name="ejercicios[{{ loop.index0 }}][repeticiones]" value="{{ rutinaEjercicio.repeticiones }}">
+                    </div>
+                {% endfor %}
             </div>
             <div class="row g-2 align-items-end mb-3" id="add-ejercicio-row">
                 <div class="col-md-6">

@@ -1,0 +1,44 @@
+{# filepath: d:\tfg\gymbro\templates\rutina\visualizar.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card">
+        <div class="card-header">
+            Datos de la rutina
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Alumno</dt>
+                <dd class="col-sm-9">
+                    {{ rutina.alumno.usuario.nombre }}
+                    {{ rutina.alumno.usuario.apellido1 }}
+                    {% if rutina.alumno.usuario.apellido2 %}
+                        {{ rutina.alumno.usuario.apellido2 }}
+                    {% endif %}
+                </dd>
+                <dt class="col-sm-3">Nombre de la rutina</dt>
+                <dd class="col-sm-9">{{ rutina.nombre }}</dd>
+            </dl>
+            <hr>
+            <h5>Ejercicios de la rutina</h5>
+            <ul class="list-group mb-3">
+                {% for rutinaEjercicio in ejerciciosRutina %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <strong>{{ rutinaEjercicio.orden }}.</strong>
+                            {{ rutinaEjercicio.ejercicio.nombre }}
+                            <small class="text-muted">({{ rutinaEjercicio.ejercicio.musculoPrincipal }})</small>
+                        </span>
+                        <span class="badge bg-primary rounded-pill">{{ rutinaEjercicio.repeticiones }} repeticiones</span>
+                    </li>
+                {% else %}
+                    <li class="list-group-item text-center">No hay ejercicios en esta rutina.</li>
+                {% endfor %}
+            </ul>
+            <a href="{{ path('app_rutina') }}" class="btn btn-secondary mt-3">Volver</a>
+        </div>
+    </div>
+{% endblock %}

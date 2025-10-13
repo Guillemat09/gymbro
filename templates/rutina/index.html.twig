@@ -11,6 +11,7 @@
             <tr>
                 <th>Alumno</th>
                 <th>Nombre de la rutina</th>
+                <th>Opciones</th>
             </tr>
         </thead>
         <tbody>
@@ -24,10 +25,50 @@
                         {% endif %}
                     </td>
                     <td>{{ rutina.nombre }}</td>
+                    <td class="text-center">
+                        <a href="{{ path('rutina_visualizar', {'id': rutina.id}) }}" class="btn btn-outline-primary btn-sm" title="Visualizar">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ path('rutina_editar', {'id': rutina.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <!-- Botón para mostrar el modal de eliminación -->
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarRutina{{ rutina.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                        <!-- Modal Bootstrap de confirmación -->
+                        <div class="modal fade" id="modalEliminarRutina{{ rutina.id }}" tabindex="-1" aria-labelledby="modalLabelRutina{{ rutina.id }}" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabelRutina{{ rutina.id }}">Confirmar eliminación de rutina</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                              </div>
+                              <div class="modal-body">
+                                ¿Estás seguro de que deseas eliminar la rutina <strong>{{ rutina.nombre }}</strong> del alumno <strong>
+                                    {{ rutina.alumno.usuario.nombre }}
+                                    {{ rutina.alumno.usuario.apellido1 }}
+                                    {% if rutina.alumno.usuario.apellido2 %}
+                                        {{ rutina.alumno.usuario.apellido2 }}
+                                    {% endif %}
+                                </strong>?
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form method="post" action="{{ path('rutina_eliminar', {'id': rutina.id}) }}">
+                                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="2" class="text-center">No hay rutinas registradas.</td>
+                    <td colspan="3" class="text-center">No hay rutinas registradas.</td>
                 </tr>
             {% endfor %}
         </tbody>

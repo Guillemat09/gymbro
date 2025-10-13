@@ -97,4 +97,127 @@ final class RutinaController extends AbstractController
             'ejerciciosRutina' => $ejerciciosRutina,
         ]);
     }
+
+    #[Route('/rutina/{id}/editar', name: 'rutina_editar')]
+    public function editar(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $rutina = $em->getRepository(Rutina::class)->find($id);
+
+        if (!$rutina) {
+            throw $this->createNotFoundException('Rutina no encontrada');
+        }
+
+        $form = $this->createFormBuilder($rutina)
+            ->add('alumno', EntityType::class, [
+                'class' => Alumno::class,
+                'choice_label' => function (Alumno $alumno) {
+                    $usuario = $alumno->getUsuario();
+                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . $usuario->getApellido2() : 'Sin nombre';
+                },
+                'label' => 'Alumno',
+                'placeholder' => 'Selecciona un alumno',
+                'attr' => ['class' => 'form-select'],
+            ])
+            ->add('nombre', TextType::class, [
+                'label' => 'Nombre de la rutina',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('guardar', SubmitType::class, [
+                'label' => 'Guardar cambios',
+                'attr' => ['class' => 'btn btn-primary mt-3'],
+            ])
+            ->getForm();
+
+        $form->handleRequest($request);
+
+        // Procesar ejercicios añadidos manualmente
+        $ejerciciosRutina = [];
+        if ($request->isMethod('POST')) {
+            $ejerciciosData = $request->request->all('ejercicios');
+            $orden = 1;
+            foreach ($ejerciciosData ?? [] as $ejData) {
+                if (!empty($ejData['ejercicio']) && !empty($ejData['repeticiones'])) {
+                    $ejercicio = $em->getRepository(Ejercicio::class)->find($ejData['ejercicio']);
+                    if ($ejercicio) {
+                        $rutinaEjercicio = new RutinaEjercicios();
+                        $rutinaEjercicio->setEjercicio($ejercicio);
+                        $rutinaEjercicio->setRepeticiones((int)$ejData['repeticiones']);
+                        $rutinaEjercicio->setOrden($orden++);
+                        $ejerciciosRutina[] = $rutinaEjercicio;
+                    }
+                }
+            }
+        } else {
+            // Cargar ejercicios actuales de la rutina
+            foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
+                $ejerciciosRutina[] = $rutinaEjercicio;
+            }
+        }
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            // Eliminar ejercicios anteriores
+            foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
+                $em->remove($rutinaEjercicio);
+            }
+            $em->flush();
+
+            // Añadir los nuevos ejercicios
+            foreach ($ejerciciosRutina as $rutinaEjercicio) {
+                $rutinaEjercicio->setRutina($rutina);
+                $em->persist($rutinaEjercicio);
+            }
+            $em->flush();
+
+            return $this->redirectToRoute('app_rutina');
+        }
+
+        $ejercicios = $em->getRepository(Ejercicio::class)->findAll();
+
+        return $this->render('rutina/editar.html.twig', [
+            'form' => $form->createView(),
+            'titulo' => 'Editar rutina',
+            'ejercicios' => $ejercicios,
+            'ejerciciosRutina' => $ejerciciosRutina,
+        ]);
+    }
+
+    #[Route('/rutina/{id}', name: 'rutina_visualizar')]
+    public function visualizar(int $id, EntityManagerInterface $em): Response
+    {
+        $rutina = $em->getRepository(Rutina::class)->find($id);
+
+        if (!$rutina) {
+            throw $this->createNotFoundException('Rutina no encontrada');
+        }
+
+        // Obtener ejercicios ordenados
+        $ejerciciosRutina = $rutina->getRutinaEjercicios()->toArray();
+        usort($ejerciciosRutina, fn($a, $b) => $a->getOrden() <=> $b->getOrden());
+
+        return $this->render('rutina/visualizar.html.twig', [
+            'rutina' => $rutina,
+            'ejerciciosRutina' => $ejerciciosRutina,
+            'titulo' => 'Visualizar rutina',
+        ]);
+    }
+
+    #[Route('/rutina/{id}/eliminar', name: 'rutina_eliminar', methods: ['POST'])]
+    public function eliminar(int $id, EntityManagerInterface $em): Response
+    {
+        $rutina = $em->getRepository(Rutina::class)->find($id);
+
+        if (!$rutina) {
+            throw $this->createNotFoundException('Rutina no encontrada');
+        }
+
+        // Eliminar los registros asociados en RutinaEjercicios
+        foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
+            $em->remove($rutinaEjercicio);
+        }
+
+        $em->remove($rutina);
+        $em->flush();
+
+        return $this->redirectToRoute('app_rutina');
+    }
 }
