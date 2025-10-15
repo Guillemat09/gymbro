@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ClaseRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -35,6 +37,17 @@ class Clase
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?Profesor $profesor = null;
+
+    /**
+     * @var Collection<int, Reserva>
+     */
+    #[ORM\OneToMany(targetEntity: Reserva::class, mappedBy: 'clase')]
+    private Collection $reservas;
+
+    public function __construct()
+    {
+        $this->reservas = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -121,6 +134,36 @@ class Clase
     public function setProfesor(?Profesor $profesor): static
     {
         $this->profesor = $profesor;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Reserva>
+     */
+    public function getReservas(): Collection
+    {
+        return $this->reservas;
+    }
+
+    public function addReserva(Reserva $reserva): static
+    {
+        if (!$this->reservas->contains($reserva)) {
+            $this->reservas->add($reserva);
+            $reserva->setClase($this);
+        }
+
+        return $this;
+    }
+
+    public function removeReserva(Reserva $reserva): static
+    {
+        if ($this->reservas->removeElement($reserva)) {
+            // set the owning side to null (unless already changed)
+            if ($reserva->getClase() === $this) {
+                $reserva->setClase(null);
+            }
+        }
 
         return $this;
     }
