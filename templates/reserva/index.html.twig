@@ -15,6 +15,7 @@
                 <th>Clase</th>
                 <th>Fecha de clase</th>
                 <th>Profesor</th>
+                <th>Opciones</th>
             </tr>
         </thead>
         <tbody>
@@ -38,10 +39,44 @@
                             {{ reserva.clase.profesor.usuario.apellido2 }}
                         {% endif %}
                     </td>
+                    <td class="text-center">
+                        <!-- Botón para mostrar el modal de eliminación -->
+                        <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar"
+                                data-bs-toggle="modal" data-bs-target="#modalEliminarReserva{{ reserva.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                        <!-- Modal Bootstrap de confirmación -->
+                        <div class="modal fade" id="modalEliminarReserva{{ reserva.id }}" tabindex="-1" aria-labelledby="modalLabelReserva{{ reserva.id }}" aria-hidden="true">
+                          <div class="modal-dialog">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="modalLabelReserva{{ reserva.id }}">Confirmar eliminación de reserva</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                              </div>
+                              <div class="modal-body">
+                                ¿Estás seguro de que deseas eliminar la reserva <strong>#{{ reserva.id }}</strong> de la clase <strong>{{ reserva.clase.nombre }}</strong> para el alumno <strong>
+                                    {{ reserva.alumno.usuario.nombre }}
+                                    {{ reserva.alumno.usuario.apellido1 }}
+                                    {% if reserva.alumno.usuario.apellido2 %}
+                                        {{ reserva.alumno.usuario.apellido2 }}
+                                    {% endif %}
+                                </strong>?
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <form method="post" action="{{ path('reserva_eliminar', {'id': reserva.id}) }}">
+                                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    </td>
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="6" class="text-center">No hay reservas registradas.</td>
+                    <td colspan="7" class="text-center">No hay reservas registradas.</td>
                 </tr>
             {% endfor %}
         </tbody>

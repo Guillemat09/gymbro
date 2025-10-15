@@ -100,4 +100,19 @@ final class ReservaController extends AbstractController
             'titulo' => 'Nueva reserva',
         ]);
     }
+
+    #[Route('/reserva/{id}/eliminar', name: 'reserva_eliminar', methods: ['POST'])]
+    public function eliminar(int $id, EntityManagerInterface $em): Response
+    {
+        $reserva = $em->getRepository(Reserva::class)->find($id);
+
+        if (!$reserva) {
+            throw $this->createNotFoundException('Reserva no encontrada');
+        }
+
+        $em->remove($reserva);
+        $em->flush();
+
+        return $this->redirectToRoute('app_reserva');
+    }
 }
