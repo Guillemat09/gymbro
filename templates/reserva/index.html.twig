@@ -1,0 +1,49 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-4 mb-3">{{ titulo }}</h1>
+    <a href="{{ path('reserva_nueva') }}" class="btn btn-success mb-3">Nueva reserva</a>
+
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>ID Reserva</th>
+                <th>Alumno</th>
+                <th>Fecha de reserva</th>
+                <th>Clase</th>
+                <th>Fecha de clase</th>
+                <th>Profesor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reserva in reservas %}
+                <tr>
+                    <td>{{ reserva.id }}</td>
+                    <td>
+                        {{ reserva.alumno.usuario.nombre }}
+                        {{ reserva.alumno.usuario.apellido1 }}
+                        {% if reserva.alumno.usuario.apellido2 %}
+                            {{ reserva.alumno.usuario.apellido2 }}
+                        {% endif %}
+                    </td>
+                    <td>{{ reserva.fecha|date('d/m/Y') }}</td>
+                    <td>{{ reserva.clase.nombre }}</td>
+                    <td>{{ reserva.clase.fecha|date('d/m/Y') }}</td>
+                    <td>
+                        {{ reserva.clase.profesor.usuario.nombre }}
+                        {{ reserva.clase.profesor.usuario.apellido1 }}
+                        {% if reserva.clase.profesor.usuario.apellido2 %}
+                            {{ reserva.clase.profesor.usuario.apellido2 }}
+                        {% endif %}
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">No hay reservas registradas.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
