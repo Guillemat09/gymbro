@@ -115,4 +115,19 @@ final class ReservaController extends AbstractController
 
         return $this->redirectToRoute('app_reserva');
     }
+
+    #[Route('/reserva/{id}', name: 'reserva_visualizar')]
+    public function visualizar(int $id, EntityManagerInterface $em): Response
+    {
+        $reserva = $em->getRepository(Reserva::class)->find($id);
+
+        if (!$reserva) {
+            throw $this->createNotFoundException('Reserva no encontrada');
+        }
+
+        return $this->render('reserva/visualizar.html.twig', [
+            'reserva' => $reserva,
+            'titulo' => 'Visualizar reserva',
+        ]);
+    }
 }

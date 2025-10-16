@@ -1,0 +1,66 @@
+{# filepath: d:\tfg\gymbro\templates\reserva\visualizar.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block body %}
+    <h1 class="display-5 mb-4">{{ titulo }}</h1>
+    <div class="card">
+        <div class="card-header">
+            Datos de la reserva
+        </div>
+        <div class="card-body">
+            <form>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">ID Reserva</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.id }}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Alumno</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.alumno.usuario.nombre }} {{ reserva.alumno.usuario.apellido1 }}{% if reserva.alumno.usuario.apellido2 %} {{ reserva.alumno.usuario.apellido2 }}{% endif %}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Fecha de reserva</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.fecha|date('d/m/Y') }}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Clase</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.clase.nombre }}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Fecha de clase</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.clase.fecha|date('d/m/Y') }}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Hora de clase</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.clase.hora|date('H:i') }}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Lugar</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{{ reserva.clase.lugar }}">
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label">Profesor</label>
+                    <div class="col-sm-8">
+                        <input type="text" readonly class="form-control-plaintext" value="{% if reserva.clase.profesor and reserva.clase.profesor.usuario %}{{ reserva.clase.profesor.usuario.nombre }} {{ reserva.clase.profesor.usuario.apellido1 }}{% if reserva.clase.profesor.usuario.apellido2 %} {{ reserva.clase.profesor.usuario.apellido2 }}{% endif %}{% else %}-{% endif %}">
+                    </div>
+                </div>
+            </form>
+            <a href="{{ path('app_reserva') }}" class="btn btn-secondary mt-3">Volver</a>
+        </div>
+    </div>
+{% endblock %}

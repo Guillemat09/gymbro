@@ -40,6 +40,9 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
+                    <a href="{{ path('reserva_visualizar', {'id': reserva.id}) }}" class="btn btn-outline-primary btn-sm me-1" title="Visualizar">
+    <i class="bi bi-eye"></i>
+</a>
                         <!-- Botón para mostrar el modal de eliminación -->
                         <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar"
                                 data-bs-toggle="modal" data-bs-target="#modalEliminarReserva{{ reserva.id }}">
