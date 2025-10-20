@@ -16,17 +16,37 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use App\Entity\Alumno;
 use App\Entity\Profesor;
 use App\Entity\Administrador;
+use Knp\Component\Pager\PaginatorInterface;
 
 class UsuarioController extends AbstractController
 {
     #[Route('/usuario', name: 'app_usuario')]
-    public function index(EntityManagerInterface $em): Response
+    public function index(EntityManagerInterface $em, Request $request, PaginatorInterface $paginator): Response
     {
-        $usuarios = $em->getRepository(Usuario::class)->findAll();
+        // Opciones permitidas y valor por defecto
+        $perPageOptions = [10, 25, 50, 100];
+        $perPage = (int) $request->query->get('per_page', 10);
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = 10;
+        }
+
+        $page = max(1, $request->query->getInt('page', 1));
+
+        // Query base (puedes añadir filtros aquí si los quieres)
+        $qb = $em->getRepository(Usuario::class)->createQueryBuilder('u')
+            ->orderBy('u.id', 'ASC');
+
+        $pagination = $paginator->paginate(
+            $qb->getQuery(),
+            $page,
+            $perPage
+        );
 
         return $this->render('usuario/index.html.twig', [
-            'usuarios' => $usuarios,
+            'usuarios' => $pagination,
             'titulo' => 'GymBro - Usuarios',
+            'per_page' => $perPage,
+            'perPageOptions' => $perPageOptions,
         ]);
     }
 
