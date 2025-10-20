@@ -19,13 +19,66 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 final class RutinaController extends AbstractController
 {
     #[Route('/rutina', name: 'app_rutina')]
-    public function index(EntityManagerInterface $em): Response
-    {
-        $rutinas = $em->getRepository(Rutina::class)->findAll();
+    public function index(
+        EntityManagerInterface $em,
+        Request $request,
+        \Knp\Component\Pager\PaginatorInterface $paginator // FQCN => sin problemas de autowiring
+    ): Response {
+        // Tamaños por página
+        $perPageOptions = [10, 25, 50, 100];
+        $perPage = (int) $request->query->get('per_page', 10);
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = 10;
+        }
+        $page = max(1, $request->query->getInt('page', 1));
+
+        // ===== Filtros =====
+        $q        = trim((string) $request->query->get('q', '')); // texto: nombre de rutina o alumno
+        $alumnoId = $request->query->getInt('alumno_id', 0);
+
+        // ===== Query base =====
+        $qb = $em->getRepository(Rutina::class)->createQueryBuilder('r')
+            ->leftJoin('r.alumno', 'a')
+            ->leftJoin('a.usuario', 'u')
+            ->addSelect('a', 'u');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(r.nombre) LIKE :q
+                        OR LOWER(u.nombre) LIKE :q
+                        OR LOWER(u.apellido1) LIKE :q
+                        OR LOWER(u.apellido2) LIKE :q
+                        OR LOWER(u.email) LIKE :q')
+               ->setParameter('q', '%'.mb_strtolower($q).'%');
+        }
+
+        if ($alumnoId > 0) {
+            $qb->andWhere('a.id = :alumnoId')->setParameter('alumnoId', $alumnoId);
+        }
+
+        // Orden por defecto (sobrescribible por ?sort=&direction=)
+        $qb->addOrderBy('r.id', 'DESC');
+
+        // Paginación
+        $pagination = $paginator->paginate(
+            $qb,
+            $page,
+            $perPage
+        );
+
+        // Selector de alumnos para filtros
+        $alumnos = $em->getRepository(Alumno::class)->createQueryBuilder('al')
+            ->leftJoin('al.usuario', 'uu')->addSelect('uu')
+            ->orderBy('uu.nombre', 'ASC')
+            ->getQuery()->getResult();
 
         return $this->render('rutina/index.html.twig', [
-            'rutinas' => $rutinas,
-            'titulo' => 'Listado de rutinas',
+            'rutinas'        => $pagination,
+            'titulo'         => 'Listado de rutinas',
+            'per_page'       => $perPage,
+            'perPageOptions' => $perPageOptions,
+            'q'              => $q,
+            'alumno_id'      => $alumnoId,
+            'alumnos'        => $alumnos,
         ]);
     }
 
@@ -39,7 +92,7 @@ final class RutinaController extends AbstractController
                 'class' => Alumno::class,
                 'choice_label' => function (Alumno $alumno) {
                     $usuario = $alumno->getUsuario();
-                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . $usuario->getApellido2() : 'Sin nombre';
+                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . ($usuario->getApellido2() ?? '') : 'Sin nombre';
                 },
                 'label' => 'Alumno',
                 'placeholder' => 'Selecciona un alumno',
@@ -68,7 +121,7 @@ final class RutinaController extends AbstractController
                     if ($ejercicio) {
                         $rutinaEjercicio = new RutinaEjercicios();
                         $rutinaEjercicio->setEjercicio($ejercicio);
-                        $rutinaEjercicio->setRepeticiones((int)$ejData['repeticiones']);
+                        $rutinaEjercicio->setRepeticiones((int) $ejData['repeticiones']);
                         $rutinaEjercicio->setOrden($orden++);
                         $ejerciciosRutina[] = $rutinaEjercicio;
                     }
@@ -112,7 +165,7 @@ final class RutinaController extends AbstractController
                 'class' => Alumno::class,
                 'choice_label' => function (Alumno $alumno) {
                     $usuario = $alumno->getUsuario();
-                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . $usuario->getApellido2() : 'Sin nombre';
+                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . ($usuario->getApellido2() ?? '') : 'Sin nombre';
                 },
                 'label' => 'Alumno',
                 'placeholder' => 'Selecciona un alumno',
@@ -141,7 +194,7 @@ final class RutinaController extends AbstractController
                     if ($ejercicio) {
                         $rutinaEjercicio = new RutinaEjercicios();
                         $rutinaEjercicio->setEjercicio($ejercicio);
-                        $rutinaEjercicio->setRepeticiones((int)$ejData['repeticiones']);
+                        $rutinaEjercicio->setRepeticiones((int) $ejData['repeticiones']);
                         $rutinaEjercicio->setOrden($orden++);
                         $ejerciciosRutina[] = $rutinaEjercicio;
                     }

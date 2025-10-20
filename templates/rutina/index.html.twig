@@ -6,11 +6,145 @@
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
     <a href="{{ path('rutina_nueva') }}" class="btn btn-success mb-3">Nueva rutina</a>
 
+    {# ——— Query escalar para la paginación (evita "Array to string conversion") ——— #}
+    {% set persistedQuery = {} %}
+    {% for k, v in app.request.query.all %}
+        {% if k != 'page' and v is not iterable %}
+            {% set persistedQuery = persistedQuery|merge({ (k): v }) %}
+        {% endif %}
+    {% endfor %}
+    {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
+
+    {# ====== Filtros + per_page + paginación superior ====== #}
+    <div class="row g-2 align-items-end mb-3">
+        <div class="col-12 col-xxl-9">
+            <form method="get" id="filter-form" class="row g-2">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                <input type="hidden" name="page" value="1">
+
+                <div class="col-sm-6 col-md-5">
+                    <label for="q" class="form-label mb-0">Buscar</label>
+                    <input type="text" class="form-control" id="q" name="q" value="{{ q }}" placeholder="rutina o alumno">
+                </div>
+
+                <div class="col-sm-6 col-md-4">
+                    <label for="alumno_id" class="form-label mb-0">Alumno</label>
+                    <select id="alumno_id" name="alumno_id" class="form-select">
+                        <option value="0">— Todos —</option>
+                        {% for al in alumnos %}
+                            {% set nombre = al.usuario ? al.usuario.nombre ~ ' ' ~ al.usuario.apellido1 ~ (al.usuario.apellido2 ? ' ' ~ al.usuario.apellido2 : '') : 'Sin nombre' %}
+                            <option value="{{ al.id }}" {{ al.id == alumno_id ? 'selected' : '' }}>
+                                {{ nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-sm-3 col-md-2 d-grid">
+                    <button class="btn btn-primary" type="submit">Filtrar</button>
+                </div>
+
+                <div class="col-sm-3 col-md-2 d-grid">
+                    {% if q or alumno_id %}
+                        <a class="btn btn-outline-secondary" href="{{ path('app_rutina') }}">Limpiar</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <div class="col-6 col-xxl-1">
+            <form method="get" id="per-page-form" class="d-flex align-items-center">
+                {% for k, v in app.request.query.all %}
+                    {% if k not in ['per_page', 'page'] %}
+                        {% if v is iterable %}
+                            {% for vv in v %}
+                                <input type="hidden" name="{{ k }}[]" value="{{ vv }}">
+                            {% endfor %}
+                        {% else %}
+                            <input type="hidden" name="{{ k }}" value="{{ v }}">
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
+                <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
+                    {% for opt in perPageOptions %}
+                        <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+                <span class="text-muted">/ pág.</span>
+            </form>
+        </div>
+
+        {# ====== Paginación superior personalizada ====== #}
+        <div class="col-6 col-xxl-2 text-end">
+            {% set page = rutinas.currentPageNumber %}
+            {% set last = rutinas.pageCount %}
+            {% set start = page - 2 > 0 ? page - 2 : 1 %}
+            {% set end = page + 2 <= last ? page + 2 : last %}
+
+            <nav aria-label="Paginación superior">
+                <ul class="pagination pagination-sm mb-0 justify-content-end">
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': 1})) }}" aria-label="Primera">
+                            ««
+                        </a>
+                    </li>
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">
+                            Anterior
+                        </a>
+                    </li>
+
+                    {% for i in start..end %}
+                        <li class="page-item {{ i == page ? 'active' : '' }}">
+                            <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">
+                            Siguiente
+                        </a>
+                    </li>
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': last})) }}" aria-label="Última">
+                            »»
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    {# ====== Ordenación con iconos ====== #}
+    {% set currentSort = app.request.query.get('sort') %}
+    {% set currentDir  = app.request.query.get('direction')|default('asc') %}
+
+    {% macro sort_icon(field, currentSort, currentDir) %}
+        {% if currentSort == field %}
+            {% if currentDir == 'desc' %}
+                <i class="bi bi-caret-down-fill ms-1"></i>
+            {% else %}
+                <i class="bi bi-caret-up-fill ms-1"></i>
+            {% endif %}
+        {% else %}
+            <i class="bi bi-arrow-down-up ms-1 opacity-50"></i>
+        {% endif %}
+    {% endmacro %}
+    {% import _self as self %}
+
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
             <tr>
-                <th>Alumno</th>
-                <th>Nombre de la rutina</th>
+                <th>
+                    {{ knp_pagination_sortable(rutinas, 'Alumno', 'u.nombre')|raw }}
+                    {{ self.sort_icon('u.nombre', currentSort, currentDir) }}
+                </th>
+                <th>
+                    {{ knp_pagination_sortable(rutinas, 'Nombre de la rutina', 'r.nombre')|raw }}
+                    {{ self.sort_icon('r.nombre', currentSort, currentDir) }}
+                </th>
                 <th>Opciones</th>
             </tr>
         </thead>
@@ -18,10 +152,10 @@
             {% for rutina in rutinas %}
                 <tr>
                     <td>
-                        {{ rutina.alumno.usuario.nombre }}
-                        {{ rutina.alumno.usuario.apellido1 }}
-                        {% if rutina.alumno.usuario.apellido2 %}
-                            {{ rutina.alumno.usuario.apellido2 }}
+                        {% if rutina.alumno and rutina.alumno.usuario %}
+                            {{ rutina.alumno.usuario.nombre }} {{ rutina.alumno.usuario.apellido1 }}{% if rutina.alumno.usuario.apellido2 %} {{ rutina.alumno.usuario.apellido2 }}{% endif %}
+                        {% else %}
+                            -
                         {% endif %}
                     </td>
                     <td>{{ rutina.nombre }}</td>
@@ -32,13 +166,12 @@
                         <a href="{{ path('rutina_editar', {'id': rutina.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <!-- Botón para mostrar el modal de eliminación -->
+
                         <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
                                 data-bs-toggle="modal" data-bs-target="#modalEliminarRutina{{ rutina.id }}">
                             <i class="bi bi-trash"></i>
                         </button>
 
-                        <!-- Modal Bootstrap de confirmación -->
                         <div class="modal fade" id="modalEliminarRutina{{ rutina.id }}" tabindex="-1" aria-labelledby="modalLabelRutina{{ rutina.id }}" aria-hidden="true">
                           <div class="modal-dialog">
                             <div class="modal-content">
@@ -47,13 +180,14 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                               </div>
                               <div class="modal-body">
-                                ¿Estás seguro de que deseas eliminar la rutina <strong>{{ rutina.nombre }}</strong> del alumno <strong>
-                                    {{ rutina.alumno.usuario.nombre }}
-                                    {{ rutina.alumno.usuario.apellido1 }}
-                                    {% if rutina.alumno.usuario.apellido2 %}
-                                        {{ rutina.alumno.usuario.apellido2 }}
-                                    {% endif %}
-                                </strong>?
+                                ¿Eliminar la rutina <strong>{{ rutina.nombre }}</strong>?
+                                <ul class="mt-2">
+                                    <li><strong>Alumno:</strong>
+                                        {% if rutina.alumno and rutina.alumno.usuario %}
+                                            {{ rutina.alumno.usuario.nombre }} {{ rutina.alumno.usuario.apellido1 }}{% if rutina.alumno.usuario.apellido2 %} {{ rutina.alumno.usuario.apellido2 }}{% endif %}
+                                        {% else %}-{% endif %}
+                                    </li>
+                                </ul>
                               </div>
                               <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -73,4 +207,69 @@
             {% endfor %}
         </tbody>
     </table>
+
+    {# ====== Resumen + paginación inferior ====== #}
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            Mostrando
+            {{ ((rutinas.currentPageNumber - 1) * rutinas.itemNumberPerPage) + 1 }}
+            -
+            {{ rutinas.currentPageNumber * rutinas.itemNumberPerPage > rutinas.totalItemCount
+                ? rutinas.totalItemCount
+                : rutinas.currentPageNumber * rutinas.itemNumberPerPage }}
+            de {{ rutinas.totalItemCount }} rutinas
+        </div>
+
+        {# ====== Paginación inferior personalizada ====== #}
+        <div>
+            {% set page = rutinas.currentPageNumber %}
+            {% set last = rutinas.pageCount %}
+            {% set start = page - 2 > 0 ? page - 2 : 1 %}
+            {% set end = page + 2 <= last ? page + 2 : last %}
+
+            <nav aria-label="Paginación inferior">
+                <ul class="pagination pagination-sm mb-0 justify-content-end">
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': 1})) }}" aria-label="Primera">
+                            ««
+                        </a>
+                    </li>
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">
+                            Anterior
+                        </a>
+                    </li>
+
+                    {% for i in start..end %}
+                        <li class="page-item {{ i == page ? 'active' : '' }}">
+                            <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">
+                            Siguiente
+                        </a>
+                    </li>
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': last})) }}" aria-label="Última">
+                            »»
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        // Cambiar "per page" => vuelve a la página 1 manteniendo filtros/ordenación
+        document.getElementById('per_page')?.addEventListener('change', function() {
+            const form = document.getElementById('per-page-form');
+            if (!form) return;
+            const params = new URLSearchParams(new FormData(form));
+            params.delete('page');
+            const url = window.location.pathname + '?' + params.toString();
+            window.location.href = url;
+        });
+    </script>
 {% endblock %}

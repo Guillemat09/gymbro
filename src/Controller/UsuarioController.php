@@ -20,33 +20,49 @@ use Knp\Component\Pager\PaginatorInterface;
 
 class UsuarioController extends AbstractController
 {
-    #[Route('/usuario', name: 'app_usuario')]
+  #[Route('/usuario', name: 'app_usuario')]
     public function index(EntityManagerInterface $em, Request $request, PaginatorInterface $paginator): Response
     {
-        // Opciones permitidas y valor por defecto
+        // Tamaños por página permitidos y valor por defecto
         $perPageOptions = [10, 25, 50, 100];
         $perPage = (int) $request->query->get('per_page', 10);
         if (!in_array($perPage, $perPageOptions, true)) {
             $perPage = 10;
         }
-
         $page = max(1, $request->query->getInt('page', 1));
 
-        // Query base (puedes añadir filtros aquí si los quieres)
-        $qb = $em->getRepository(Usuario::class)->createQueryBuilder('u')
-            ->orderBy('u.id', 'ASC');
+        // ===== Filtros =====
+        $q    = trim((string) $request->query->get('q', ''));           // texto libre: nombre, apellidos, email
+        $tipo = (string) $request->query->get('tipo', '');              // alumno|profesor|administrador|''
 
+        // ===== Query base =====
+        $qb = $em->getRepository(Usuario::class)->createQueryBuilder('u');
+
+        if ($q !== '') {
+            $qb->andWhere('LOWER(u.nombre) LIKE :q OR LOWER(u.apellido1) LIKE :q OR LOWER(u.apellido2) LIKE :q OR LOWER(u.email) LIKE :q')
+               ->setParameter('q', '%'.mb_strtolower($q).'%');
+        }
+        if ($tipo !== '') {
+            $qb->andWhere('u.tipo = :tipo')->setParameter('tipo', $tipo);
+        }
+
+        // Orden por defecto (KnpPaginator lo podrá sobrescribir con ?sort=&direction=)
+        $qb->orderBy('u.id', 'ASC');
+
+        // Paginación (pasa el QB directamente)
         $pagination = $paginator->paginate(
-            $qb->getQuery(),
+            $qb,
             $page,
             $perPage
         );
 
         return $this->render('usuario/index.html.twig', [
-            'usuarios' => $pagination,
-            'titulo' => 'GymBro - Usuarios',
-            'per_page' => $perPage,
-            'perPageOptions' => $perPageOptions,
+            'usuarios'        => $pagination,
+            'titulo'          => 'GymBro - Usuarios',
+            'per_page'        => $perPage,
+            'perPageOptions'  => $perPageOptions,
+            'q'               => $q,
+            'tipo'            => $tipo,
         ]);
     }
 
