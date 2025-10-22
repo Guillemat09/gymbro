@@ -4,47 +4,43 @@ namespace App\Entity;
 
 use App\Repository\UsuarioRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 
 #[ORM\Entity(repositoryClass: UsuarioRepository::class)]
-class Usuario
+#[UniqueEntity(fields: ['email'], message: 'Ya existe una cuenta con este email.')]
+class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100)]
+    #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
-    #[ORM\Column(length: 100)]
+    // Inicializamos roles para evitar el error de propiedad no inicializada
+    #[ORM\Column(type: 'json')]
+    private array $roles = [];
+
+    // Contraseña en texto plano (sin hash)
+    #[ORM\Column(length: 255)]
     private ?string $password = null;
 
-    #[ORM\Column(length: 20)]
+    #[ORM\Column(length: 100, nullable: true)]
     private ?string $nombre = null;
 
-    #[ORM\Column(length: 20)]
+    #[ORM\Column(length: 100, nullable: true)]
     private ?string $apellido1 = null;
 
-    #[ORM\Column(length: 20, nullable: true)]
+    #[ORM\Column(length: 100, nullable: true)]
     private ?string $apellido2 = null;
 
-    #[ORM\Column(length: 30, nullable: true)]
-    private ?string $telefono = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $direccion = null;
-
-    #[ORM\Column(length: 20)]
+    #[ORM\Column(length: 50, nullable: true)]
     private ?string $tipo = null;
 
-    #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
-    private ?Profesor $profesor = null;
-
-    #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
-    private ?Alumno $alumno = null;
-
-    #[ORM\OneToOne(mappedBy: 'usuario', cascade: ['persist', 'remove'])]
-    private ?Administrador $administrador = null;
+    // ======================== MÉTODOS ========================
 
     public function getId(): ?int
     {
@@ -56,34 +52,73 @@ class Usuario
         return $this->email;
     }
 
-    public function setEmail(string $email): static
+    public function setEmail(string $email): self
     {
-        $this->email = $email;
-
+        $this->email = mb_strtolower(trim($email));
         return $this;
     }
 
+    public function getUserIdentifier(): string
+    {
+        return (string) $this->email;
+    }
+
+    /** @deprecated Mantener por compatibilidad con código antiguo */
+    public function getUsername(): string
+    {
+        return $this->getUserIdentifier();
+    }
+
+    /**
+     * Devuelve los roles asignados al usuario.
+     */
+    public function getRoles(): array
+    {
+        $roles = $this->roles ?? [];
+        if (!in_array('ROLE_USER', $roles, true)) {
+            $roles[] = 'ROLE_USER';
+        }
+        return array_values(array_unique($roles));
+    }
+
+    public function setRoles(array $roles): self
+    {
+        $this->roles = array_values(array_unique($roles));
+        return $this;
+    }
+
+    /**
+     * Contraseña en texto plano (sin hash)
+     */
     public function getPassword(): ?string
     {
         return $this->password;
     }
 
-    public function setPassword(string $password): static
+    public function setPassword(?string $password): self
     {
         $this->password = $password;
-
         return $this;
     }
+
+    /**
+     * No se usa, pero es requerido por la interfaz.
+     */
+    public function eraseCredentials(): void
+    {
+        // No hay datos sensibles que limpiar.
+    }
+
+    // ========== CAMPOS ADICIONALES ==========
 
     public function getNombre(): ?string
     {
         return $this->nombre;
     }
 
-    public function setNombre(string $nombre): static
+    public function setNombre(?string $nombre): self
     {
         $this->nombre = $nombre;
-
         return $this;
     }
 
@@ -92,10 +127,9 @@ class Usuario
         return $this->apellido1;
     }
 
-    public function setApellido1(string $apellido1): static
+    public function setApellido1(?string $apellido1): self
     {
         $this->apellido1 = $apellido1;
-
         return $this;
     }
 
@@ -104,34 +138,9 @@ class Usuario
         return $this->apellido2;
     }
 
-    public function setApellido2(?string $apellido2): static
+    public function setApellido2(?string $apellido2): self
     {
         $this->apellido2 = $apellido2;
-
-        return $this;
-    }
-
-    public function getTelefono(): ?string
-    {
-        return $this->telefono;
-    }
-
-    public function setTelefono(?string $telefono): static
-    {
-        $this->telefono = $telefono;
-
-        return $this;
-    }
-
-    public function getDireccion(): ?string
-    {
-        return $this->direccion;
-    }
-
-    public function setDireccion(?string $direccion): static
-    {
-        $this->direccion = $direccion;
-
         return $this;
     }
 
@@ -140,61 +149,9 @@ class Usuario
         return $this->tipo;
     }
 
-    public function setTipo(string $tipo): static
+    public function setTipo(?string $tipo): self
     {
         $this->tipo = $tipo;
-
         return $this;
     }
-
-    public function getProfesor(): ?Profesor
-    {
-        return $this->profesor;
-    }
-
-    public function setProfesor(Profesor $profesor): static
-    {
-        // set the owning side of the relation if necessary
-        if ($profesor->getUsuario() !== $this) {
-            $profesor->setUsuario($this);
-        }
-
-        $this->profesor = $profesor;
-
-        return $this;
-    }
-
-    public function getAlumno(): ?Alumno
-    {
-        return $this->alumno;
-    }
-
-    public function setAlumno(Alumno $alumno): static
-    {
-        // set the owning side of the relation if necessary
-        if ($alumno->getUsuario() !== $this) {
-            $alumno->setUsuario($this);
-        }
-
-        $this->alumno = $alumno;
-
-        return $this;
-    }
-
-    public function getAdministrador(): ?Administrador
-    {
-        return $this->administrador;
-    }
-
-    public function setAdministrador(Administrador $administrador): static
-    {
-        // set the owning side of the relation if necessary
-        if ($administrador->getUsuario() !== $this) {
-            $administrador->setUsuario($this);
-        }
-
-        $this->administrador = $administrador;
-
-        return $this;
-    }
-}
+} 

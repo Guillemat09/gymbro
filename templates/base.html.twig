@@ -100,9 +100,35 @@
                         </li>
                     </ul>
 
-                    <ul class="navbar-nav">
-                        {# espacio para futuros items a la derecha #}
-                    </ul>
+                <ul class="navbar-nav ms-auto">
+    {% if app.user %}
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-2"></i>
+                <span class="d-none d-sm-inline">
+                    {{ app.user.nombre is defined and app.user.nombre ? app.user.nombre : app.user.email }}
+                </span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li class="dropdown-header">
+                    {{ app.user.email }}
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                {# ejemplo de enlace a "Mi perfil" si existe #}
+                {# <li><a class="dropdown-item" href="{{ path('perfil') }}">Mi perfil</a></li> #}
+                <li>
+                    <a class="dropdown-item text-danger" href="{{ path('app_logout') }}">
+                        <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+                    </a>
+                </li>
+            </ul>
+        </li>
+    {% else %}
+        <li class="nav-item">
+            <a class="btn btn-outline-light ms-lg-3" href="{{ path('app_login') }}">Iniciar sesión</a>
+        </li>
+    {% endif %}
+</ul>
                 </div>
             </div>
         </nav>

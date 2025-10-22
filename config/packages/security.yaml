@@ -1,0 +1,37 @@
+# config/packages/security.yaml
+security:
+  password_hashers:
+    # Aplica a tu entidad de usuario
+    App\Entity\Usuario: 'plaintext'
+    # (opcional) también podrías usar la interfaz genérica:
+    # Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'plaintext'
+
+  providers:
+    app_user_provider:
+      entity:
+        class: App\Entity\Usuario
+        property: email
+
+  firewalls:
+    dev:
+      pattern: ^/(?:_(profiler|wdt)|css|images|js|build)/
+      security: false
+
+    main:
+      lazy: true
+      provider: app_user_provider
+
+      form_login:
+        login_path: app_login
+        check_path: app_login
+        enable_csrf: true
+        default_target_path: app_usuario
+
+      logout:
+        path: app_logout
+        target: app_login
+
+  access_control:
+    - { path: ^/login, roles: PUBLIC_ACCESS }
+    - { path: ^/(?:css|js|images|build)/, roles: PUBLIC_ACCESS }
+    - { path: ^/, roles: ROLE_USER }
