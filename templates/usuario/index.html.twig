@@ -5,7 +5,7 @@
 
 {% block body %}
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
-    <a href="{{ path('usuario_nuevo') }}" class="btn btn-success mb-3">Nuevo usuario</a>
+    <a href="{{ path('usuario_nuevo') }}" class="btn btn-success btn-lg mb-3">Nuevo usuario</a>
 
     {# ——— Query escalar para la paginación (evita "Array to string conversion") ——— #}
     {% set persistedQuery = {} %}
@@ -16,7 +16,7 @@
     {% endfor %}
     {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
 
-    {# ====== Filtros + per_page + paginación superior ====== #}
+    {# ====== Filtros + per_page (sin paginación superior) ====== #}
     <div class="row g-2 align-items-end mb-3">
         <div class="col-12 col-lg-7">
             <form method="get" id="filter-form" class="row g-2">
@@ -39,7 +39,7 @@
                 </div>
 
                 <div class="col-sm-2 col-md-2 d-grid">
-                    <button class="btn btn-primary" type="submit">Filtrar</button>
+                    <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>
                 </div>
 
                 <div class="col-12">
@@ -50,8 +50,8 @@
             </form>
         </div>
 
-        <div class="col-6 col-lg-2">
-            <form method="get" id="per-page-form" class="d-flex align-items-center">
+        <div class="col-6 col-lg-3 d-flex align-items-center">
+            <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
                 {% for k, v in app.request.query.all %}
                     {% if k not in ['per_page', 'page'] %}
                         {% if v is iterable %}
@@ -73,13 +73,9 @@
                 <span class="text-muted">/ pág.</span>
             </form>
         </div>
-
-        <div class="col-6 col-lg-3 text-end">
-            {{ knp_pagination_render(usuarios, null, { query: persistedQuery, size: 'sm' }) }}
-        </div>
     </div>
 
-    {# ====== Ordenación con iconos (FIX: pasar variables al macro) ====== #}
+    {# ====== Ordenación con iconos ====== #}
     {% set currentSort = app.request.query.get('sort') %}
     {% set currentDir  = app.request.query.get('direction')|default('asc') %}
 
@@ -100,23 +96,33 @@
         <thead class="table-dark">
             <tr>
                 <th>
-                    {{ knp_pagination_sortable(usuarios, 'ID', 'u.id')|raw }}
+                    <span class="sortable-header">
+                        {{ knp_pagination_sortable(usuarios, 'ID', 'u.id')|raw }}
+                    </span>
                     {{ self.sort_icon('u.id', currentSort, currentDir) }}
                 </th>
                 <th>
-                    {{ knp_pagination_sortable(usuarios, 'Email', 'u.email')|raw }}
+                    <span class="sortable-header">
+                        {{ knp_pagination_sortable(usuarios, 'Email', 'u.email')|raw }}
+                    </span>
                     {{ self.sort_icon('u.email', currentSort, currentDir) }}
                 </th>
                 <th>
-                    {{ knp_pagination_sortable(usuarios, 'Nombre', 'u.nombre')|raw }}
+                    <span class="sortable-header">
+                        {{ knp_pagination_sortable(usuarios, 'Nombre', 'u.nombre')|raw }}
+                    </span>
                     {{ self.sort_icon('u.nombre', currentSort, currentDir) }}
                 </th>
                 <th>
-                    {{ knp_pagination_sortable(usuarios, 'Apellido 1', 'u.apellido1')|raw }}
+                    <span class="sortable-header">
+                        {{ knp_pagination_sortable(usuarios, 'Apellido 1', 'u.apellido1')|raw }}
+                    </span>
                     {{ self.sort_icon('u.apellido1', currentSort, currentDir) }}
                 </th>
                 <th>
-                    {{ knp_pagination_sortable(usuarios, 'Tipo', 'u.tipo')|raw }}
+                    <span class="sortable-header">
+                        {{ knp_pagination_sortable(usuarios, 'Tipo', 'u.tipo')|raw }}
+                    </span>
                     {{ self.sort_icon('u.tipo', currentSort, currentDir) }}
                 </th>
                 <th>Opciones</th>
@@ -131,15 +137,9 @@
                     <td>{{ usuario.apellido1 }}{% if usuario.apellido2 %} {{ usuario.apellido2 }}{% endif %}</td>
                     <td>{{ usuario.tipo|default('-') }}</td>
                     <td class="text-center">
-                        <a href="{{ path('usuario_visualizar', {'id': usuario.id}) }}" class="btn btn-outline-primary btn-sm me-1" title="Visualizar">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{{ path('usuario_editar', {'id': usuario.id}) }}" class="btn btn-outline-warning btn-sm me-1" title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalEliminarUsuario{{ usuario.id }}" title="Eliminar">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        <a href="{{ path('usuario_visualizar', {'id': usuario.id}) }}" class="btn btn-outline-primary btn-sm me-1" title="Visualizar"><i class="bi bi-eye"></i></a>
+                        <a href="{{ path('usuario_editar', {'id': usuario.id}) }}" class="btn btn-outline-warning btn-sm me-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalEliminarUsuario{{ usuario.id }}" title="Eliminar"><i class="bi bi-trash"></i></button>
 
                         <div class="modal fade" id="modalEliminarUsuario{{ usuario.id }}" tabindex="-1" aria-labelledby="modalLabelUsuario{{ usuario.id }}" aria-hidden="true">
                           <div class="modal-dialog">
@@ -170,6 +170,7 @@
         </tbody>
     </table>
 
+    {# ====== Resumen + paginación inferior ====== #}
     <div class="d-flex justify-content-between align-items-center mt-3">
         <div>
             Mostrando
@@ -180,15 +181,55 @@
                 : usuarios.currentPageNumber * usuarios.itemNumberPerPage }}
             de {{ usuarios.totalItemCount }} usuarios
         </div>
+
         <div>
-            {{ knp_pagination_render(usuarios, null, { query: persistedQuery, size: 'sm' }) }}
+            {% set page = usuarios.currentPageNumber %}
+            {% set last = usuarios.pageCount %}
+            {% set start = page - 2 > 0 ? page - 2 : 1 %}
+            {% set end = page + 2 <= last ? page + 2 : last %}
+
+            <nav aria-label="Paginación inferior">
+                <ul class="pagination pagination-sm mb-0 justify-content-end">
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': 1})) }}" aria-label="Primera">««</a>
+                    </li>
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">Anterior</a>
+                    </li>
+
+                    {% for i in start..end %}
+                        <li class="page-item {{ i == page ? 'active' : '' }}">
+                            <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">Siguiente</a>
+                    </li>
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': last})) }}" aria-label="Última">»»</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 
+    <style>
+        /* Cabeceras de tabla: texto blanco y sin subrayado */
+        thead.table-dark a {
+            color: #fff !important;
+            text-decoration: none !important;
+        }
+        thead.table-dark a:hover {
+            color: #ccc !important;
+            text-decoration: underline;
+        }
+    </style>
+
     <script>
-        // Cambiar "per page" => vuelve a la página 1 manteniendo filtros/ordenación
-        document.getElementById('per_page').addEventListener('change', function() {
+        document.getElementById('per_page')?.addEventListener('change', function() {
             const form = document.getElementById('per-page-form');
+            if (!form) return;
             const params = new URLSearchParams(new FormData(form));
             params.delete('page');
             const url = window.location.pathname + '?' + params.toString();

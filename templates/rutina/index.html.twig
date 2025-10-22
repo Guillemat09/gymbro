@@ -15,7 +15,7 @@
     {% endfor %}
     {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
 
-    {# ====== Filtros + per_page + paginación superior ====== #}
+    {# ====== Filtros + per_page (sin paginación superior) ====== #}
     <div class="row g-2 align-items-end mb-3">
         <div class="col-12 col-xxl-9">
             <form method="get" id="filter-form" class="row g-2">
@@ -52,8 +52,8 @@
             </form>
         </div>
 
-        <div class="col-6 col-xxl-1">
-            <form method="get" id="per-page-form" class="d-flex align-items-center">
+        <div class="col-6 col-xxl-3 d-flex align-items-center">
+            <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
                 {% for k, v in app.request.query.all %}
                     {% if k not in ['per_page', 'page'] %}
                         {% if v is iterable %}
@@ -74,46 +74,6 @@
                 </select>
                 <span class="text-muted">/ pág.</span>
             </form>
-        </div>
-
-        {# ====== Paginación superior personalizada ====== #}
-        <div class="col-6 col-xxl-2 text-end">
-            {% set page = rutinas.currentPageNumber %}
-            {% set last = rutinas.pageCount %}
-            {% set start = page - 2 > 0 ? page - 2 : 1 %}
-            {% set end = page + 2 <= last ? page + 2 : last %}
-
-            <nav aria-label="Paginación superior">
-                <ul class="pagination pagination-sm mb-0 justify-content-end">
-                    <li class="page-item {{ page == 1 ? 'disabled' }}">
-                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': 1})) }}" aria-label="Primera">
-                            ««
-                        </a>
-                    </li>
-                    <li class="page-item {{ page == 1 ? 'disabled' }}">
-                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">
-                            Anterior
-                        </a>
-                    </li>
-
-                    {% for i in start..end %}
-                        <li class="page-item {{ i == page ? 'active' : '' }}">
-                            <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
-                        </li>
-                    {% endfor %}
-
-                    <li class="page-item {{ page == last ? 'disabled' }}">
-                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">
-                            Siguiente
-                        </a>
-                    </li>
-                    <li class="page-item {{ page == last ? 'disabled' }}">
-                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': last})) }}" aria-label="Última">
-                            »»
-                        </a>
-                    </li>
-                </ul>
-            </nav>
         </div>
     </div>
 
@@ -220,7 +180,7 @@
             de {{ rutinas.totalItemCount }} rutinas
         </div>
 
-        {# ====== Paginación inferior personalizada ====== #}
+        {# ====== Solo paginación inferior ====== #}
         <div>
             {% set page = rutinas.currentPageNumber %}
             {% set last = rutinas.pageCount %}
