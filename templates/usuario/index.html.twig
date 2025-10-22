@@ -18,12 +18,12 @@
 
     {# ====== Filtros + per_page (sin paginación superior) ====== #}
     <div class="row g-2 align-items-end mb-3">
-        <div class="col-12 col-lg-7">
+        <div class="col-12 col-lg-8">
             <form method="get" id="filter-form" class="row g-2">
                 <input type="hidden" name="per_page" value="{{ per_page }}">
                 <input type="hidden" name="page" value="1">
 
-                <div class="col-sm-6 col-md-6">
+                <div class="col-sm-6 col-md-5">
                     <label for="q" class="form-label mb-0">Buscar</label>
                     <input type="text" class="form-control" id="q" name="q" value="{{ q }}" placeholder="nombre, apellidos o email">
                 </div>
@@ -38,19 +38,19 @@
                     </select>
                 </div>
 
-                <div class="col-sm-2 col-md-2 d-grid">
+                <div class="col-sm-6 col-md-3 d-grid">
                     <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>
                 </div>
 
-                <div class="col-12">
+                <div class="col-sm-6 col-md-3 d-grid">
                     {% if q or tipo %}
-                        <a class="btn btn-link px-0" href="{{ path('app_usuario') }}">Limpiar filtros</a>
+                        <a class="btn btn-outline-secondary btn-lg w-100" href="{{ path('app_usuario') }}">Quitar filtrado</a>
                     {% endif %}
                 </div>
             </form>
         </div>
 
-        <div class="col-6 col-lg-3 d-flex align-items-center">
+        <div class="col-12 col-lg-4 d-flex align-items-center">
             <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
                 {% for k, v in app.request.query.all %}
                     {% if k not in ['per_page', 'page'] %}
@@ -63,7 +63,6 @@
                         {% endif %}
                     {% endif %}
                 {% endfor %}
-
                 <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
                 <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
                     {% for opt in perPageOptions %}
@@ -96,33 +95,23 @@
         <thead class="table-dark">
             <tr>
                 <th>
-                    <span class="sortable-header">
-                        {{ knp_pagination_sortable(usuarios, 'ID', 'u.id')|raw }}
-                    </span>
+                    <span class="sortable-header">{{ knp_pagination_sortable(usuarios, 'ID', 'u.id')|raw }}</span>
                     {{ self.sort_icon('u.id', currentSort, currentDir) }}
                 </th>
                 <th>
-                    <span class="sortable-header">
-                        {{ knp_pagination_sortable(usuarios, 'Email', 'u.email')|raw }}
-                    </span>
+                    <span class="sortable-header">{{ knp_pagination_sortable(usuarios, 'Email', 'u.email')|raw }}</span>
                     {{ self.sort_icon('u.email', currentSort, currentDir) }}
                 </th>
                 <th>
-                    <span class="sortable-header">
-                        {{ knp_pagination_sortable(usuarios, 'Nombre', 'u.nombre')|raw }}
-                    </span>
+                    <span class="sortable-header">{{ knp_pagination_sortable(usuarios, 'Nombre', 'u.nombre')|raw }}</span>
                     {{ self.sort_icon('u.nombre', currentSort, currentDir) }}
                 </th>
                 <th>
-                    <span class="sortable-header">
-                        {{ knp_pagination_sortable(usuarios, 'Apellido 1', 'u.apellido1')|raw }}
-                    </span>
+                    <span class="sortable-header">{{ knp_pagination_sortable(usuarios, 'Apellido 1', 'u.apellido1')|raw }}</span>
                     {{ self.sort_icon('u.apellido1', currentSort, currentDir) }}
                 </th>
                 <th>
-                    <span class="sortable-header">
-                        {{ knp_pagination_sortable(usuarios, 'Tipo', 'u.tipo')|raw }}
-                    </span>
+                    <span class="sortable-header">{{ knp_pagination_sortable(usuarios, 'Tipo', 'u.tipo')|raw }}</span>
                     {{ self.sort_icon('u.tipo', currentSort, currentDir) }}
                 </th>
                 <th>Opciones</th>
@@ -140,32 +129,11 @@
                         <a href="{{ path('usuario_visualizar', {'id': usuario.id}) }}" class="btn btn-outline-primary btn-sm me-1" title="Visualizar"><i class="bi bi-eye"></i></a>
                         <a href="{{ path('usuario_editar', {'id': usuario.id}) }}" class="btn btn-outline-warning btn-sm me-1" title="Editar"><i class="bi bi-pencil"></i></a>
                         <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalEliminarUsuario{{ usuario.id }}" title="Eliminar"><i class="bi bi-trash"></i></button>
-
-                        <div class="modal fade" id="modalEliminarUsuario{{ usuario.id }}" tabindex="-1" aria-labelledby="modalLabelUsuario{{ usuario.id }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title" id="modalLabelUsuario{{ usuario.id }}">Confirmar eliminación</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                              </div>
-                              <div class="modal-body">
-                                ¿Eliminar al usuario <strong>{{ usuario.nombre }} {{ usuario.apellido1 }}{% if usuario.apellido2 %} {{ usuario.apellido2 }}{% endif %}</strong> (ID {{ usuario.id }})?
-                              </div>
-                              <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <form method="post" action="{{ path('usuario_eliminar', {'id': usuario.id}) }}">
-                                    <button type="submit" class="btn btn-danger">Eliminar</button>
-                                </form>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        {# modal... #}
                     </td>
                 </tr>
             {% else %}
-                <tr>
-                    <td colspan="6" class="text-center">No hay usuarios registrados.</td>
-                </tr>
+                <tr><td colspan="6" class="text-center">No hay usuarios registrados.</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -196,13 +164,11 @@
                     <li class="page-item {{ page == 1 ? 'disabled' }}">
                         <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">Anterior</a>
                     </li>
-
                     {% for i in start..end %}
                         <li class="page-item {{ i == page ? 'active' : '' }}">
                             <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
                         </li>
                     {% endfor %}
-
                     <li class="page-item {{ page == last ? 'disabled' }}">
                         <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">Siguiente</a>
                     </li>
@@ -216,14 +182,8 @@
 
     <style>
         /* Cabeceras de tabla: texto blanco y sin subrayado */
-        thead.table-dark a {
-            color: #fff !important;
-            text-decoration: none !important;
-        }
-        thead.table-dark a:hover {
-            color: #ccc !important;
-            text-decoration: underline;
-        }
+        thead.table-dark a { color:#fff !important; text-decoration:none !important; }
+        thead.table-dark a:hover { color:#ccc !important; text-decoration:underline; }
     </style>
 
     <script>
