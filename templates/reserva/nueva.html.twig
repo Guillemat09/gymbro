@@ -1,73 +1,79 @@
-{# filepath: d:\tfg\gymbro\templates\reserva\nueva.html.twig #}
 {% extends 'base.html.twig' %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block body %}
-    <h1 class="display-5 mb-4">{{ titulo }}</h1>
-    {% for message in app.flashes('danger') %}
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-    {% endfor %}
-    <div class="card p-4">
-        {{ form_start(form) }}
-            {{ form_row(form.alumno) }}
-            {{ form_row(form.clase) }}
+<h1 class="h3 mb-4">{{ titulo }}</h1>
 
-            <div id="info-clase" class="mt-3" style="display:none;">
-                <div class="card border-info">
-                    <div class="card-header bg-info text-white">
-                        Información de la clase seleccionada
-                    </div>
-                    <div class="card-body">
-                        <p><strong>Nombre:</strong> <span id="clase-nombre"></span></p>
-                        <p><strong>Fecha:</strong> <span id="clase-fecha"></span></p>
-                        <p><strong>Hora:</strong> <span id="clase-hora"></span></p>
-                        <p><strong>Lugar:</strong> <span id="clase-lugar"></span></p>
-                        <p><strong>Profesor:</strong> <span id="clase-profesor"></span></p>
-                        <p><strong>Plazas libres:</strong> <span id="clase-plazas"></span></p>
-                    </div>
-                </div>
-            </div>
+{# Mensajes flash #}
+{% for label, messages in app.flashes %}
+  {% for message in messages %}
+    <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+  {% endfor %}
+{% endfor %}
 
-            {{ form_row(form.guardar) }}
-        {{ form_end(form) }}
+<div class="card shadow-sm p-4">
+  {{ form_start(form) }}
+
+    {# Solo ADMIN y PROFESOR pueden seleccionar alumno #}
+    {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
+      <div class="mb-3">
+        {{ form_label(form.alumno) }}
+        {{ form_widget(form.alumno, { 'attr': {'class': 'form-select'} }) }}
+        {{ form_errors(form.alumno) }}
+      </div>
+    {% endif %}
+
+    <div class="mb-3">
+      {{ form_label(form.clase) }}
+      {{ form_widget(form.clase, { 'attr': {'class': 'form-select', 'id':'clase-select'} }) }}
+      {{ form_errors(form.clase) }}
     </div>
 
-    <script>
-        // Datos de clases para mostrar info (rellenar desde backend)
-        const clasesInfo = {
-            {% for clase in form.clase.vars.choices %}
-                "{{ clase.value }}": {
-                    nombre: "{{ clase.data.nombre|e('js') }}",
-                    fecha: "{{ clase.data.fecha ? clase.data.fecha|date('d/m/Y') : '' }}",
-                    hora: "{{ clase.data.hora ? clase.data.hora|date('H:i') : '' }}",
-                    lugar: "{{ clase.data.lugar|default('')|e('js') }}",
-                    profesor: "{% if clase.data.profesor and clase.data.profesor.usuario %}{{ clase.data.profesor.usuario.nombre|e('js') }} {{ clase.data.profesor.usuario.apellido1|e('js') }}{% else %}-{% endif %}",
-                    plazas: "{{ (clase.data.limite - clase.data.reservas|length) > 0 ? (clase.data.limite - clase.data.reservas|length) : 'COMPLETO' }}"
-                },
-            {% endfor %}
-        };
+    {# Información dinámica de la clase #}
+    <div id="info-clase" class="alert alert-info mt-3" style="display:none;">
+      <p><strong>Profesor:</strong> <span id="profesor-info"></span></p>
+      <p><strong>Fecha de la clase:</strong> <span id="fecha-info"></span></p>
+    </div>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const select = document.getElementById('{{ form.clase.vars.id }}');
-            const infoDiv = document.getElementById('info-clase');
-            select.addEventListener('change', function() {
-                const claseId = select.value;
-                if (clasesInfo[claseId]) {
-                    infoDiv.style.display = 'block';
-                    document.getElementById('clase-nombre').textContent = clasesInfo[claseId].nombre;
-                    document.getElementById('clase-fecha').textContent = clasesInfo[claseId].fecha;
-                    document.getElementById('clase-hora').textContent = clasesInfo[claseId].hora;
-                    document.getElementById('clase-lugar').textContent = clasesInfo[claseId].lugar;
-                    document.getElementById('clase-profesor').textContent = clasesInfo[claseId].profesor;
-                    document.getElementById('clase-plazas').textContent = clasesInfo[claseId].plazas;
-                } else {
-                    infoDiv.style.display = 'none';
-                }
-            });
-        });
-    </script>
+    <div class="mt-4">
+      <button class="btn btn-primary">
+        <i class="bi bi-check-lg me-1"></i> Guardar reserva
+      </button>
+      <a href="{{ path('app_reserva') }}" class="btn btn-outline-secondary ms-2">
+        Cancelar
+      </a>
+    </div>
+
+  {{ form_end(form) }}
+</div>
+
+{# Script para mostrar la información de la clase seleccionada usando data-* añadidos por el form #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const claseSelect = document.getElementById('clase-select');
+    const infoBox = document.getElementById('info-clase');
+    const profesorInfo = document.getElementById('profesor-info');
+    const fechaInfo = document.getElementById('fecha-info');
+
+    function mostrarInfoClase() {
+        const selected = claseSelect.options[claseSelect.selectedIndex];
+        if (!selected || !selected.dataset.profesor) {
+            infoBox.style.display = 'none';
+            return;
+        }
+
+        profesorInfo.textContent = selected.dataset.profesor;
+        fechaInfo.textContent = selected.dataset.fecha;
+        infoBox.style.display = 'block';
+    }
+
+    claseSelect.addEventListener('change', mostrarInfoClase);
+    mostrarInfoClase();
+});
+</script>
+
 {% endblock %}

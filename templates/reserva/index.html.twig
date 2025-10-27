@@ -1,248 +1,140 @@
+{# templates/reserva/index.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}Reservas{% endblock %}
 
 {% block body %}
-    <h1 class="display-4 mb-3">{{ titulo }}</h1>
-    <a href="{{ path('reserva_nueva') }}" class="btn btn-success mb-3">Nueva reserva</a>
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 m-0">Reservas</h1>
 
-    {# ——— Query escalar para la paginación (evita "Array to string conversion") ——— #}
-    {% set persistedQuery = {} %}
-    {% for k, v in app.request.query.all %}
-        {% if k != 'page' and v is not iterable %}
-            {% set persistedQuery = persistedQuery|merge({ (k): v }) %}
-        {% endif %}
-    {% endfor %}
-    {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
+  <div>
+    <a href="{{ path('reserva_nueva') }}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i> Nueva reserva
+    </a>
+  </div>
+</div>
 
-    {# ====== Filtros + per_page + paginación superior ====== #}
-    <div class="row g-2 align-items-end mb-3">
-        <div class="col-12 col-xxl-9">
-            <form method="get" id="filter-form" class="row g-2">
-                <input type="hidden" name="per_page" value="{{ per_page }}">
-                <input type="hidden" name="page" value="1">
+{# BUSCADOR SENCILLO (GET ?q=) #}
+<form method="get" class="row g-2 mb-3">
+  <div class="col-sm-8 col-md-6">
+    <input type="search"
+           class="form-control"
+           name="q"
+           value="{{ q|default('') }}"
+           placeholder="Buscar por clase, profesor o alumno"
+           autocomplete="off">
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary" type="submit">
+      <i class="bi bi-search"></i>
+      Buscar
+    </button>
+  </div>
+</form>
 
-                <div class="col-sm-6 col-md-4">
-                    <label for="q" class="form-label mb-0">Buscar</label>
-                    <input type="text" class="form-control" id="q" name="q" value="{{ q }}" placeholder="alumno, profesor o clase">
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <label for="fecha_reserva_desde" class="form-label mb-0">Reserva desde</label>
-                    <input type="date" class="form-control" id="fecha_reserva_desde" name="fecha_reserva_desde" value="{{ fecha_reserva_desde }}">
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <label for="fecha_reserva_hasta" class="form-label mb-0">Reserva hasta</label>
-                    <input type="date" class="form-control" id="fecha_reserva_hasta" name="fecha_reserva_hasta" value="{{ fecha_reserva_hasta }}">
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <label for="fecha_clase_desde" class="form-label mb-0">Clase desde</label>
-                    <input type="date" class="form-control" id="fecha_clase_desde" name="fecha_clase_desde" value="{{ fecha_clase_desde }}">
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <label for="fecha_clase_hasta" class="form-label mb-0">Clase hasta</label>
-                    <input type="date" class="form-control" id="fecha_clase_hasta" name="fecha_clase_hasta" value="{{ fecha_clase_hasta }}">
-                </div>
-
-                <div class="col-sm-6 col-md-3">
-                    <label for="profesor_id" class="form-label mb-0">Profesor</label>
-                    <select id="profesor_id" name="profesor_id" class="form-select">
-                        <option value="0">— Todos —</option>
-                        {% for prof in profesores %}
-                            {% set nombre = prof.usuario ? prof.usuario.nombre ~ ' ' ~ prof.usuario.apellido1 : 'Sin nombre' %}
-                            <option value="{{ prof.id }}" {{ prof.id == profesor_id ? 'selected' : '' }}>
-                                {{ nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-sm-3 col-md-2 d-grid">
-                    <button class="btn btn-primary" type="submit">Filtrar</button>
-                </div>
-
-                <div class="col-sm-3 col-md-2 d-grid">
-                    {% if q or fecha_reserva_desde or fecha_reserva_hasta or fecha_clase_desde or fecha_clase_hasta or profesor_id %}
-                        <a class="btn btn-outline-secondary" href="{{ path('app_reserva') }}">Limpiar</a>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
-
-        <div class="col-6 col-xxl-1">
-            <form method="get" id="per-page-form" class="d-flex align-items-center">
-                {# Conserva todos los params menos per_page y page; si hay arrays, múltiple input #}
-                {% for k, v in app.request.query.all %}
-                    {% if k not in ['per_page', 'page'] %}
-                        {% if v is iterable %}
-                            {% for vv in v %}
-                                <input type="hidden" name="{{ k }}[]" value="{{ vv }}">
-                            {% endfor %}
-                        {% else %}
-                            <input type="hidden" name="{{ k }}" value="{{ v }}">
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-
-                <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
-                <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
-                    {% for opt in perPageOptions %}
-                        <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }}</option>
-                    {% endfor %}
-                </select>
-                <span class="text-muted">/ pág.</span>
-            </form>
-        </div>
-
-        <div class="col-6 col-xxl-2 text-end">
-            {{ knp_pagination_render(reservas, null, { query: persistedQuery, size: 'sm' }) }}
-        </div>
+{# MENSAJES FLASH #}
+{% for label, messages in app.flashes %}
+  {% for message in messages %}
+    <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
+  {% endfor %}
+{% endfor %}
 
-    {# ====== Ordenación con iconos ====== #}
-    {% set currentSort = app.request.query.get('sort') %}
-    {% set currentDir  = app.request.query.get('direction')|default('asc') %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>
+          {{ knp_pagination_sortable(reservas, 'ID', 'r.id')|raw }}
+        </th>
 
-    {% macro sort_icon(field, currentSort, currentDir) %}
-        {% if currentSort == field %}
-            {% if currentDir == 'desc' %}
-                <i class="bi bi-caret-down-fill ms-1"></i>
+        {# La columna "Alumno" no se muestra a los alumnos #}
+        {% set esAlumnoSolo = is_granted('ROLE_ALUMNO') and not is_granted('ROLE_ADMIN') and not is_granted('ROLE_PROFESOR') %}
+        {% if not esAlumnoSolo %}
+          <th>
+            {{ knp_pagination_sortable(reservas, 'Alumno', 'au.nombre')|raw }}
+          </th>
+        {% endif %}
+
+        <th>
+          {{ knp_pagination_sortable(reservas, 'Fecha de reserva', 'r.fecha')|raw }}
+        </th>
+        <th>
+          {{ knp_pagination_sortable(reservas, 'Clase', 'c.nombre')|raw }}
+        </th>
+        <th>
+          {{ knp_pagination_sortable(reservas, 'Fecha de clase', 'c.fecha')|raw }}
+        </th>
+        <th>
+          {{ knp_pagination_sortable(reservas, 'Profesor', 'pu.nombre')|raw }}
+        </th>
+        <th class="text-center">Opciones</th>
+      </tr>
+    </thead>
+
+    <tbody>
+    {% for reserva in reservas %}
+      <tr>
+        <td>{{ reserva.id }}</td>
+
+        {% if not esAlumnoSolo %}
+          <td>
+            {% if reserva.alumno and reserva.alumno.usuario %}
+              {{ reserva.alumno.usuario.nombre ?? '' }} {{ reserva.alumno.usuario.apellido1 ?? '' }}{% if reserva.alumno.usuario.apellido2 %} {{ reserva.alumno.usuario.apellido2 }}{% endif %}
             {% else %}
-                <i class="bi bi-caret-up-fill ms-1"></i>
+              -
             {% endif %}
-        {% else %}
-            <i class="bi bi-arrow-down-up ms-1 opacity-50"></i>
+          </td>
         {% endif %}
-    {% endmacro %}
-    {% import _self as self %}
 
-    <table class="table table-striped table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>
-                    {{ knp_pagination_sortable(reservas, 'ID Reserva', 'r.id')|raw }}
-                    {{ self.sort_icon('r.id', currentSort, currentDir) }}
-                </th>
-                <th>
-                    {{ knp_pagination_sortable(reservas, 'Alumno', 'au.nombre')|raw }}
-                    {{ self.sort_icon('au.nombre', currentSort, currentDir) }}
-                </th>
-                <th>
-                    {{ knp_pagination_sortable(reservas, 'Fecha de reserva', 'r.fecha')|raw }}
-                    {{ self.sort_icon('r.fecha', currentSort, currentDir) }}
-                </th>
-                <th>
-                    {{ knp_pagination_sortable(reservas, 'Clase', 'c.nombre')|raw }}
-                    {{ self.sort_icon('c.nombre', currentSort, currentDir) }}
-                </th>
-                <th>
-                    {{ knp_pagination_sortable(reservas, 'Fecha de clase', 'c.fecha')|raw }}
-                    {{ self.sort_icon('c.fecha', currentSort, currentDir) }}
-                </th>
-                <th>
-                    {{ knp_pagination_sortable(reservas, 'Profesor', 'pu.nombre')|raw }}
-                    {{ self.sort_icon('pu.nombre', currentSort, currentDir) }}
-                </th>
-                <th>Opciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for reserva in reservas %}
-                <tr>
-                    <td>{{ reserva.id }}</td>
-                    <td>
-                        {% if reserva.alumno and reserva.alumno.usuario %}
-                            {{ reserva.alumno.usuario.nombre }} {{ reserva.alumno.usuario.apellido1 }}{% if reserva.alumno.usuario.apellido2 %} {{ reserva.alumno.usuario.apellido2 }}{% endif %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td>{{ reserva.fecha ? reserva.fecha|date('d/m/Y') : '-' }}</td>
-                    <td>{{ reserva.clase ? reserva.clase.nombre : '-' }}</td>
-                    <td>{{ reserva.clase and reserva.clase.fecha ? reserva.clase.fecha|date('d/m/Y') : '-' }}</td>
-                    <td>
-                        {% if reserva.clase and reserva.clase.profesor and reserva.clase.profesor.usuario %}
-                            {{ reserva.clase.profesor.usuario.nombre }} {{ reserva.clase.profesor.usuario.apellido1 }}{% if reserva.clase.profesor.usuario.apellido2 %} {{ reserva.clase.profesor.usuario.apellido2 }}{% endif %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <a href="{{ path('reserva_visualizar', {'id': reserva.id}) }}" class="btn btn-outline-primary btn-sm me-1" title="Visualizar">
-                            <i class="bi bi-eye"></i>
-                        </a>
-
-                        <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar"
-                                data-bs-toggle="modal" data-bs-target="#modalEliminarReserva{{ reserva.id }}">
-                            <i class="bi bi-trash"></i>
-                        </button>
-
-                        <div class="modal fade" id="modalEliminarReserva{{ reserva.id }}" tabindex="-1" aria-labelledby="modalLabelReserva{{ reserva.id }}" aria-hidden="true">
-                          <div class="modal-dialog">
-                            <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title" id="modalLabelReserva{{ reserva.id }}">Confirmar eliminación de reserva</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                              </div>
-                              <div class="modal-body">
-                                ¿Estás seguro de que deseas eliminar la reserva <strong>#{{ reserva.id }}</strong>?
-                                <ul class="mt-2">
-                                    <li><strong>Alumno:</strong>
-                                        {% if reserva.alumno and reserva.alumno.usuario %}
-                                            {{ reserva.alumno.usuario.nombre }} {{ reserva.alumno.usuario.apellido1 }}{% if reserva.alumno.usuario.apellido2 %} {{ reserva.alumno.usuario.apellido2 }}{% endif %}
-                                        {% else %}-{% endif %}
-                                    </li>
-                                    <li><strong>Clase:</strong> {{ reserva.clase ? reserva.clase.nombre : '-' }}</li>
-                                    <li><strong>Fecha de clase:</strong> {{ reserva.clase and reserva.clase.fecha ? reserva.clase.fecha|date('d/m/Y') : '-' }}</li>
-                                </ul>
-                              </div>
-                              <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                <form method="post" action="{{ path('reserva_eliminar', {'id': reserva.id}) }}">
-                                    <button type="submit" class="btn btn-danger">Eliminar</button>
-                                </form>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="7" class="text-center">No hay reservas registradas.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    {# ====== Resumen + paginación inferior ====== #}
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
-            Mostrando
-            {{ ((reservas.currentPageNumber - 1) * reservas.itemNumberPerPage) + 1 }}
+        <td>{{ reserva.fecha ? reserva.fecha|date('d/m/Y') : '-' }}</td>
+        <td>{{ reserva.clase ? reserva.clase.nombre : '-' }}</td>
+        <td>{{ reserva.clase and reserva.clase.fecha ? reserva.clase.fecha|date('d/m/Y') : '-' }}</td>
+        <td>
+          {% if reserva.clase and reserva.clase.profesor and reserva.clase.profesor.usuario %}
+            {{ reserva.clase.profesor.usuario.nombre ?? '' }} {{ reserva.clase.profesor.usuario.apellido1 ?? '' }}{% if reserva.clase.profesor.usuario.apellido2 %} {{ reserva.clase.profesor.usuario.apellido2 }}{% endif %}
+          {% else %}
             -
-            {{ reservas.currentPageNumber * reservas.itemNumberPerPage > reservas.totalItemCount
-                ? reservas.totalItemCount
-                : reservas.currentPageNumber * reservas.itemNumberPerPage }}
-            de {{ reservas.totalItemCount }} reservas
-        </div>
-        <div>
-            {{ knp_pagination_render(reservas, null, { query: persistedQuery, size: 'sm' }) }}
-        </div>
-    </div>
+          {% endif %}
+        </td>
 
-    <script>
-        // Cambiar "per page" => vuelve a la página 1 manteniendo filtros/ordenación
-        document.getElementById('per_page')?.addEventListener('change', function() {
-            const form = document.getElementById('per-page-form');
-            if (!form) return;
-            const params = new URLSearchParams(new FormData(form));
-            params.delete('page');
-            const url = window.location.pathname + '?' + params.toString();
-            window.location.href = url;
-        });
-    </script>
+        <td class="text-center">
+          <a href="{{ path('reserva_visualizar', {'id': reserva.id}) }}"
+             class="btn btn-outline-primary btn-sm me-1" title="Ver">
+            <i class="bi bi-eye"></i>
+          </a>
+
+          {# Para eliminar, form con token CSRF #}
+          <form action="{{ path('reserva_eliminar', {'id': reserva.id}) }}"
+                method="post" class="d-inline"
+                onsubmit="return confirm('¿Eliminar esta reserva?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('eliminar_reserva_' ~ reserva.id) }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        {# colspan: si se oculta la columna de Alumno, la tabla tiene una columna menos #}
+        <td colspan="{{ esAlumnoSolo ? 6 : 7 }}" class="text-center text-muted">
+          No hay reservas registradas.
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="d-flex justify-content-between align-items-center">
+  <div class="small text-muted">
+    Mostrando {{ reservas|length }} de {{ reservas.getTotalItemCount }} resultados
+  </div>
+  <div>
+    {{ knp_pagination_render(reservas) }}
+  </div>
+</div>
 {% endblock %}
