@@ -20,11 +20,11 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
-    // Inicializamos roles para evitar el error de propiedad no inicializada
+    // JSON de roles. Se combinará con el rol derivado por "tipo"
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
-    // Contraseña en texto plano (sin hash)
+    // Contraseña en texto plano (según tu configuración de 'plaintext')
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
@@ -40,7 +40,18 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $tipo = null;
 
-    // ======================== MÉTODOS ========================
+    // =================== RELACIONES BI-DIRECCIONALES ===================
+
+    #[ORM\OneToOne(mappedBy: 'usuario', targetEntity: Alumno::class, cascade: ['persist', 'remove'])]
+    private ?Alumno $alumno = null;
+
+    #[ORM\OneToOne(mappedBy: 'usuario', targetEntity: Profesor::class, cascade: ['persist', 'remove'])]
+    private ?Profesor $profesor = null;
+
+    #[ORM\OneToOne(mappedBy: 'usuario', targetEntity: Administrador::class, cascade: ['persist', 'remove'])]
+    private ?Administrador $administrador = null;
+
+    // ============================ MÉTODOS ==============================
 
     public function getId(): ?int
     {
@@ -70,14 +81,30 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * Devuelve los roles asignados al usuario.
+     * Devuelve los roles combinando:
+     * - roles guardados en JSON (si existieran)
+     * - rol derivado del campo "tipo"
+     * - ROLE_USER siempre
      */
     public function getRoles(): array
     {
         $roles = $this->roles ?? [];
-        if (!in_array('ROLE_USER', $roles, true)) {
-            $roles[] = 'ROLE_USER';
+
+        switch (strtolower((string) $this->tipo)) {
+            case 'administrador':
+            case 'admin':
+                $roles[] = 'ROLE_ADMIN';
+                break;
+            case 'profesor':
+                $roles[] = 'ROLE_PROFESOR';
+                break;
+            case 'alumno':
+                $roles[] = 'ROLE_ALUMNO';
+                break;
         }
+
+        $roles[] = 'ROLE_USER';
+
         return array_values(array_unique($roles));
     }
 
@@ -87,9 +114,7 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * Contraseña en texto plano (sin hash)
-     */
+    // Contraseña en texto plano (no se cifra con 'plaintext')
     public function getPassword(): ?string
     {
         return $this->password;
@@ -101,12 +126,9 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    /**
-     * No se usa, pero es requerido por la interfaz.
-     */
     public function eraseCredentials(): void
     {
-        // No hay datos sensibles que limpiar.
+        // No hay datos sensibles temporales que limpiar
     }
 
     // ========== CAMPOS ADICIONALES ==========
@@ -151,7 +173,71 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setTipo(?string $tipo): self
     {
-        $this->tipo = $tipo;
+        $this->tipo = $tipo ? mb_strtolower(trim($tipo)) : null;
         return $this;
     }
-} 
+
+    // =================== GETTERS/SETTERS RELACIONES ===================
+
+    public function getAlumno(): ?Alumno
+    {
+        return $this->alumno;
+    }
+
+    public function setAlumno(?Alumno $alumno): self
+    {
+        // Desvincular el actual
+        if ($this->alumno && $this->alumno !== $alumno) {
+            $this->alumno->setUsuario(null);
+        }
+
+        $this->alumno = $alumno;
+
+        // Mantener sincronizada la otra cara
+        if ($alumno && $alumno->getUsuario() !== $this) {
+            $alumno->setUsuario($this);
+        }
+
+        return $this;
+    }
+
+    public function getProfesor(): ?Profesor
+    {
+        return $this->profesor;
+    }
+
+    public function setProfesor(?Profesor $profesor): self
+    {
+        if ($this->profesor && $this->profesor !== $profesor) {
+            $this->profesor->setUsuario(null);
+        }
+
+        $this->profesor = $profesor;
+
+        if ($profesor && $profesor->getUsuario() !== $this) {
+            $profesor->setUsuario($this);
+        }
+
+        return $this;
+    }
+
+    public function getAdministrador(): ?Administrador
+    {
+        return $this->administrador;
+    }
+
+    public function setAdministrador(?Administrador $administrador): self
+    {
+        if ($this->administrador && $this->administrador !== $administrador) {
+            $this->administrador->setUsuario(null);
+        }
+
+        $this->administrador = $administrador;
+
+        if ($administrador && $administrador->getUsuario() !== $this) {
+            $administrador->setUsuario($this);
+        }
+
+        return $this;
+    }
+}
