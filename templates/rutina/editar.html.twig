@@ -7,7 +7,21 @@
     <h1 class="display-5 mb-4">{{ titulo }}</h1>
     <div class="card p-4">
         {{ form_start(form) }}
-            {{ form_row(form.alumno) }}
+
+            {# Solo ADMIN/PROFESOR ven el selector de alumno #}
+            {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
+                {{ form_row(form.alumno) }}
+            {% else %}
+                {# ALUMNO: ocultamos el selector y evitamos que Symfony lo pinte al final #}
+                {% do form.alumno.setRendered %}
+                <div class="mb-3">
+                    <label class="form-label">Alumno</label>
+                    <div class="form-control-plaintext">
+                        {{ app.user.nombre ?? app.user.email }}
+                    </div>
+                </div>
+            {% endif %}
+
             {{ form_row(form.nombre) }}
 
             <hr>
@@ -31,6 +45,7 @@
                     </div>
                 {% endfor %}
             </div>
+
             <div class="row g-2 align-items-end mb-3" id="add-ejercicio-row">
                 <div class="col-md-6">
                     <label for="ejercicio-select" class="form-label">Ejercicio</label>
@@ -51,7 +66,12 @@
             </div>
 
             {{ form_row(form.guardar) }}
-        {{ form_end(form) }}
+
+            {# Al usar render_rest: false, añadimos el _token manualmente si existe #}
+            {% if form._token is defined %}
+                {{ form_row(form._token) }}
+            {% endif %}
+        {{ form_end(form, { render_rest: false }) }}
     </div>
 
     <script>
@@ -71,7 +91,7 @@
 
             addBtn.addEventListener('click', function() {
                 const ejercicioId = ejercicioSelect.value;
-                const ejercicioText = ejercicioSelect.options[ejercicioSelect.selectedIndex].text;
+                const ejercicioText = ejercicioSelect.options[ejercicioSelect.selectedIndex]?.text || '';
                 const repeticiones = repeticionesInput.value;
 
                 if (!ejercicioId || !repeticiones || repeticiones < 1) {
@@ -104,23 +124,20 @@
             });
 
             ejerciciosList.addEventListener('click', function(e) {
-                const target = e.target;
-                const parentDiv = target.closest('div.mb-2');
-                if (target.classList.contains('remove-ejercicio')) {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const parentDiv = btn.closest('div.mb-2');
+                if (btn.classList.contains('remove-ejercicio')) {
                     parentDiv.remove();
                     actualizarOrden();
                 }
-                if (target.classList.contains('move-up')) {
-                    if (parentDiv.previousElementSibling) {
-                        ejerciciosList.insertBefore(parentDiv, parentDiv.previousElementSibling);
-                        actualizarOrden();
-                    }
+                if (btn.classList.contains('move-up') && parentDiv.previousElementSibling) {
+                    ejerciciosList.insertBefore(parentDiv, parentDiv.previousElementSibling);
+                    actualizarOrden();
                 }
-                if (target.classList.contains('move-down')) {
-                    if (parentDiv.nextElementSibling) {
-                        ejerciciosList.insertBefore(parentDiv.nextElementSibling, parentDiv);
-                        actualizarOrden();
-                    }
+                if (btn.classList.contains('move-down') && parentDiv.nextElementSibling) {
+                    ejerciciosList.insertBefore(parentDiv.nextElementSibling, parentDiv);
+                    actualizarOrden();
                 }
             });
         });

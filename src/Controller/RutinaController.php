@@ -18,69 +18,93 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
 final class RutinaController extends AbstractController
 {
-    #[Route('/rutina', name: 'app_rutina')]
-    public function index(
-        EntityManagerInterface $em,
-        Request $request,
-        \Knp\Component\Pager\PaginatorInterface $paginator // FQCN => sin problemas de autowiring
-    ): Response {
-        // Tamaños por página
-        $perPageOptions = [10, 25, 50, 100];
-        $perPage = (int) $request->query->get('per_page', 10);
-        if (!in_array($perPage, $perPageOptions, true)) {
-            $perPage = 10;
+ #[Route('/rutina', name: 'app_rutina')]
+public function index(
+    EntityManagerInterface $em,
+    Request $request,
+    \Knp\Component\Pager\PaginatorInterface $paginator // FQCN => sin problemas de autowiring
+): Response {
+    // Tamaños por página
+    $perPageOptions = [10, 25, 50, 100];
+    $perPage = (int) $request->query->get('per_page', 10);
+    if (!in_array($perPage, $perPageOptions, true)) {
+        $perPage = 10;
+    }
+    $page = max(1, $request->query->getInt('page', 1));
+
+    // ===== Filtros =====
+    $q        = trim((string) $request->query->get('q', '')); // texto: nombre de rutina o alumno
+    $alumnoId = $request->query->getInt('alumno_id', 0);
+
+    // ===== Query base =====
+    $qb = $em->getRepository(\App\Entity\Rutina::class)->createQueryBuilder('r')
+        ->leftJoin('r.alumno', 'a')
+        ->leftJoin('a.usuario', 'u')
+        ->addSelect('a', 'u');
+
+    if ($q !== '') {
+        $qb->andWhere('LOWER(r.nombre) LIKE :q
+                    OR LOWER(u.nombre) LIKE :q
+                    OR LOWER(u.apellido1) LIKE :q
+                    OR LOWER(u.apellido2) LIKE :q
+                    OR LOWER(u.email) LIKE :q')
+           ->setParameter('q', '%'.mb_strtolower($q).'%');
+    }
+
+    // === FILTRO POR ROL ===
+    if ($this->isGranted('ROLE_ALUMNO')) {
+        // Forzamos a mostrar solo las rutinas del alumno actual
+        $usuarioActual = $this->getUser();
+        $alumnoActual  = \method_exists($usuarioActual, 'getAlumno') ? $usuarioActual->getAlumno() : null;
+
+        if ($alumnoActual) {
+            $qb->andWhere('a = :alumnoActual')->setParameter('alumnoActual', $alumnoActual);
+            // Para que la vista conozca el alumno aplicado (si lo necesitas en inputs hidden, etc.)
+            $alumnoId = $alumnoActual->getId();
+        } else {
+            // Si por cualquier motivo no hay relación Alumno, devolvemos vacío
+            $qb->andWhere('1 = 0');
         }
-        $page = max(1, $request->query->getInt('page', 1));
-
-        // ===== Filtros =====
-        $q        = trim((string) $request->query->get('q', '')); // texto: nombre de rutina o alumno
-        $alumnoId = $request->query->getInt('alumno_id', 0);
-
-        // ===== Query base =====
-        $qb = $em->getRepository(Rutina::class)->createQueryBuilder('r')
-            ->leftJoin('r.alumno', 'a')
-            ->leftJoin('a.usuario', 'u')
-            ->addSelect('a', 'u');
-
-        if ($q !== '') {
-            $qb->andWhere('LOWER(r.nombre) LIKE :q
-                        OR LOWER(u.nombre) LIKE :q
-                        OR LOWER(u.apellido1) LIKE :q
-                        OR LOWER(u.apellido2) LIKE :q
-                        OR LOWER(u.email) LIKE :q')
-               ->setParameter('q', '%'.mb_strtolower($q).'%');
-        }
-
+    } else {
+        // Admin/Profesor: se respeta el filtro por alumno si viene en la query
         if ($alumnoId > 0) {
             $qb->andWhere('a.id = :alumnoId')->setParameter('alumnoId', $alumnoId);
         }
+    }
 
-        // Orden por defecto (sobrescribible por ?sort=&direction=)
-        $qb->addOrderBy('r.id', 'DESC');
+    // Orden por defecto (sobrescribible por ?sort=&direction=)
+    $qb->addOrderBy('r.id', 'DESC');
 
-        // Paginación
-        $pagination = $paginator->paginate(
-            $qb,
-            $page,
-            $perPage
-        );
+    // Paginación
+    $pagination = $paginator->paginate(
+        $qb,
+        $page,
+        $perPage
+    );
 
-        // Selector de alumnos para filtros
-        $alumnos = $em->getRepository(Alumno::class)->createQueryBuilder('al')
+    // Selector de alumnos para filtros:
+    // - Para alumnos: no lo necesitamos, lo dejamos vacío
+    // - Para admin/profesor: se carga listado
+    if ($this->isGranted('ROLE_ALUMNO')) {
+        $alumnos = [];
+    } else {
+        $alumnos = $em->getRepository(\App\Entity\Alumno::class)->createQueryBuilder('al')
             ->leftJoin('al.usuario', 'uu')->addSelect('uu')
             ->orderBy('uu.nombre', 'ASC')
             ->getQuery()->getResult();
-
-        return $this->render('rutina/index.html.twig', [
-            'rutinas'        => $pagination,
-            'titulo'         => 'Listado de rutinas',
-            'per_page'       => $perPage,
-            'perPageOptions' => $perPageOptions,
-            'q'              => $q,
-            'alumno_id'      => $alumnoId,
-            'alumnos'        => $alumnos,
-        ]);
     }
+
+    return $this->render('rutina/index.html.twig', [
+        'rutinas'        => $pagination,
+        'titulo'         => 'Listado de rutinas',
+        'per_page'       => $perPage,
+        'perPageOptions' => $perPageOptions,
+        'q'              => $q,
+        'alumno_id'      => $alumnoId,
+        'alumnos'        => $alumnos,
+    ]);
+}
+
 
     #[Route('/rutina/nueva', name: 'rutina_nueva')]
     public function nueva(Request $request, EntityManagerInterface $em): Response
@@ -130,6 +154,16 @@ final class RutinaController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if ($this->isGranted('ROLE_ALUMNO')) {
+                $usuario = $this->getUser();
+                $alumno  = \method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
+                if ($alumno) {
+                    $rutina->setAlumno($alumno);
+                } else {
+                    $this->addFlash('danger', 'No se encontró la ficha del alumno asociado.');
+                    return $this->redirectToRoute('app_rutina');
+                }
+            }
             $em->persist($rutina);
             foreach ($ejerciciosRutina as $rutinaEjercicio) {
                 $rutinaEjercicio->setRutina($rutina);
