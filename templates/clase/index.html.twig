@@ -37,18 +37,32 @@
                     <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta }}">
                 </div>
 
+                {# ====== SELECTOR DE PROFESOR ADAPTADO ====== #}
                 <div class="col-sm-6 col-md-3">
                     <label for="profesor_id" class="form-label mb-0">Profesor</label>
-                    <select id="profesor_id" name="profesor_id" class="form-select">
-                        <option value="0">— Todos —</option>
-                        {% for prof in profesores %}
-                            {% set nombre = prof.usuario ? prof.usuario.nombre ~ ' ' ~ prof.usuario.apellido1 : 'Sin nombre' %}
-                            <option value="{{ prof.id }}" {{ prof.id == profesor_id ? 'selected' : '' }}>
-                                {{ nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
+
+                    {% if is_granted('ROLE_PROFESOR') %}
+                        {# En modo PROFESOR, solo su propio registro (ya viene en 'profesores' con 1 elemento) #}
+                        <select id="profesor_id" name="profesor_id" class="form-select">
+                            {% for prof in profesores %}
+                                {% set nombre = prof.usuario ? prof.usuario.nombre ~ ' ' ~ prof.usuario.apellido1 : 'Sin nombre' %}
+                                <option value="{{ prof.id }}" selected>{{ nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        {# ADMIN u otros: lista completa con "— Todos —" #}
+                        <select id="profesor_id" name="profesor_id" class="form-select">
+                            <option value="0">— Todos —</option>
+                            {% for prof in profesores %}
+                                {% set nombre = prof.usuario ? prof.usuario.nombre ~ ' ' ~ prof.usuario.apellido1 : 'Sin nombre' %}
+                                <option value="{{ prof.id }}" {{ prof.id == profesor_id ? 'selected' : '' }}>
+                                    {{ nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
                 </div>
+                {# ====== FIN SELECTOR DE PROFESOR ====== #}
 
                 <div class="col-sm-6 col-md-3 d-grid">
                     <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>

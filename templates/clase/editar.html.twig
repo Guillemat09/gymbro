@@ -13,8 +13,33 @@
             {{ form_row(form.duracion) }}
             {{ form_row(form.lugar) }}
             {{ form_row(form.limite) }}
-            {{ form_row(form.profesor) }}
+
+            {# ====== PROFESOR (condicionado por rol) ====== #}
+            {% if is_granted('ROLE_ADMIN') %}
+                {# Admin: selector completo #}
+                {{ form_row(form.profesor) }}
+            {% elseif is_granted('ROLE_PROFESOR') and app.user.profesor is defined and app.user.profesor %}
+                {# Profesor: NO mostrar selector; fijar su propio id #}
+                {% do form.profesor.setRendered %}
+                <div class="mb-3">
+                    <label class="form-label">Profesor</label>
+                    <div class="form-control-plaintext">
+                        {{ app.user.nombre ~ (app.user.apellido1 ? ' ' ~ app.user.apellido1 : '') }}
+                    </div>
+                </div>
+                <input type="hidden" name="{{ form.profesor.vars.full_name }}" value="{{ app.user.profesor.id }}">
+            {% else %}
+                {# Otros roles (si los hubiera): mostrar selector por defecto #}
+                {{ form_row(form.profesor) }}
+            {% endif %}
+            {# ====== FIN PROFESOR ====== #}
+
             {{ form_row(form.guardar) }}
-        {{ form_end(form) }}
+
+            {# Al usar render_rest: false, renderizamos manualmente el token CSRF si existe #}
+            {% if form._token is defined %}
+                {{ form_row(form._token) }}
+            {% endif %}
+        {{ form_end(form, { render_rest: false }) }}
     </div>
 {% endblock %}
