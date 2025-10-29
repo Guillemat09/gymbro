@@ -33,7 +33,7 @@ security:
         check_path: app_login
         enable_csrf: true
         # Puedes dejar este target o cambiarlo a una ruta común para todos (p. ej. reservas)
-        default_target_path: app_reserva
+        default_target_path: /reserva
 
       logout:
         path: app_logout

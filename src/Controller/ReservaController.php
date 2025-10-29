@@ -149,7 +149,7 @@ class ReservaController extends AbstractController
             }
 
             // Aquí puedes validar plazas disponibles, duplicados, etc.
-
+            $reserva->setFecha(new \DateTime());
             $em->persist($reserva);
             $em->flush();
 
@@ -176,8 +176,9 @@ class ReservaController extends AbstractController
             }
         }
 
-        return $this->render('reserva/mostrar.html.twig', [
+        return $this->render('reserva/visualizar.html.twig', [
             'reserva' => $reserva,
+            'titulo'  => 'Detalle de la reserva',
         ]);
     }
 
