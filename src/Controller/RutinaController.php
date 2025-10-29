@@ -242,6 +242,24 @@ public function index(
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
+             if ($this->isGranted('ROLE_ALUMNO')) {
+        $usuario = $this->getUser();
+        $alumno  = \method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
+
+        if (!$alumno) {
+            $this->addFlash('danger', 'No se encontró la ficha del alumno asociada al usuario.');
+            return $this->redirectToRoute('app_rutina');
+        }
+
+        // Impedir que un alumno edite rutinas de otro alumno
+        if ($rutina->getAlumno() && $rutina->getAlumno()->getId() !== $alumno->getId()) {
+            throw $this->createAccessDeniedException('No puedes editar una rutina de otro alumno.');
+        }
+
+        // Forzar que el alumno de la rutina sea el alumno logueado,
+        // ignorando cualquier valor que haya podido llegar del form.
+        $rutina->setAlumno($alumno);
+    }
             // Eliminar ejercicios anteriores
             foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
                 $em->remove($rutinaEjercicio);
