@@ -118,6 +118,13 @@
                           </li>
                         {% endif %}
 
+                      {# Ejercicios: ADMIN, PROFESOR  #}
+                      {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
+                       <li class="nav-item">
+                           <a class="nav-link {{ current is defined and (current starts with 'app_ejercicio' or current starts with 'ejercicio') ? 'active' }}" href="{{ path('app_ejercicio') }}">Ejercicios</a>
+                       </li>
+                       {% endif %}
+
                       </ul>
                     {% endif %}
 
