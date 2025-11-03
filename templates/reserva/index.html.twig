@@ -7,11 +7,28 @@
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="h3 m-0">Reservas</h1>
 
-  <div>
-    <a href="{{ path('reserva_nueva') }}" class="btn btn-primary">
-      <i class="bi bi-plus-lg me-1"></i> Nueva reserva
-    </a>
-  </div>
+ <div class="btn-group">
+  <button type="button"
+          class="btn btn-primary dropdown-toggle"
+          data-bs-toggle="dropdown"
+          aria-expanded="false">
+    <i class="bi bi-plus-lg me-1"></i> Nueva reserva
+  </button>
+
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li>
+      <a class="dropdown-item" href="{{ path('reserva_nueva') }}">
+        <i class="bi bi-ui-checks-grid me-2"></i> Formulario
+      </a>
+    </li>
+    <li>
+      <a class="dropdown-item" href="{{ path('reserva_calendario') }}">
+        <i class="bi bi-calendar3 me-2"></i> Calendario
+      </a>
+    </li>
+  </ul>
+</div>
+
 </div>
 
 {# BUSCADOR SENCILLO (GET ?q=) #}

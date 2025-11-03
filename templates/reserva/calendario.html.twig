@@ -1,0 +1,96 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Calendario de reservas{% endblock %}
+
+{% block body %}
+<div class="container my-4">
+  <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+    <!-- Controles de navegación -->
+    <div class="btn-group" role="group" aria-label="Navegación del mes">
+      <button class="btn btn-outline-secondary" id="prevMonthBtn" type="button" aria-label="Mes anterior">«</button>
+      <button class="btn btn-outline-secondary" id="todayBtn" type="button">Hoy</button>
+      <button class="btn btn-outline-secondary" id="nextMonthBtn" type="button" aria-label="Mes siguiente">»</button>
+    </div>
+
+    <!-- Selectores rápidos -->
+    <div class="d-flex align-items-center gap-2">
+      <select id="yearSelect" class="form-select" aria-label="Seleccionar año"></select>
+      <select id="monthSelect" class="form-select" aria-label="Seleccionar mes"></select>
+    </div>
+  </div>
+
+  <!-- Título dinámico del calendario -->
+  <h2 class="h4 mb-3" id="calendarTitle" aria-live="polite"></h2>
+
+  <div class="calendar" role="region" aria-labelledby="calendarTitle">
+    <!-- Cabecera de días de la semana (comienza en lunes) -->
+    <div class="calendar-weekdays" role="row">
+      <div class="weekday" role="columnheader" aria-label="Lunes">L</div>
+      <div class="weekday" role="columnheader" aria-label="Martes">M</div>
+      <div class="weekday" role="columnheader" aria-label="Miércoles">X</div>
+      <div class="weekday" role="columnheader" aria-label="Jueves">J</div>
+      <div class="weekday" role="columnheader" aria-label="Viernes">V</div>
+      <div class="weekday" role="columnheader" aria-label="Sábado">S</div>
+      <div class="weekday" role="columnheader" aria-label="Domingo">D</div>
+    </div>
+
+    <!-- Grid de días -->
+    <div id="calendarGrid" class="calendar-grid" role="grid" aria-readonly="true"></div>
+  </div>
+</div>
+
+<style>
+  .calendar { user-select: none; }
+  .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+  .weekday {
+    text-align: center;
+    font-weight: 600;
+    color: #6c757d;
+    padding: .5rem 0;
+  }
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: .5rem;
+  }
+  .day {
+    border: 1px solid #e9ecef;
+    border-radius: .75rem;
+    background: #fff;
+    min-height: 130px;
+    padding: .5rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .day.muted { opacity: .45; background: #fcfcfd; }
+  .day.today { outline: 2px solid #0d6efd40; }
+  .day:hover { box-shadow: 0 0 0 2px #0d6efd20 inset; }
+  .day-number {
+    font-weight: 600;
+    font-size: .95rem;
+    color: #212529;
+    margin-bottom: .35rem;
+  }
+  .day-content { flex: 1; overflow: auto; }
+  .class-chip {
+    display: inline-block;
+    font-size: .75rem;
+    line-height: 1.2;
+    padding: .25rem .4rem;
+    border-radius: .5rem;
+    border: 1px solid #e9ecef;
+    margin: .15rem .15rem 0 0;
+    background: #f8f9fa;
+    white-space: nowrap;
+  }
+  @media (min-width: 992px) { .day { min-height: 150px; } }
+</style>
+
+<!-- Carga del JavaScript externo -->
+<script src="{{ asset('js/reservas/reservas.js') }}"></script>
+{% endblock %}

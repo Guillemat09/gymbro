@@ -208,4 +208,12 @@ class ReservaController extends AbstractController
 
         return $this->redirectToRoute('app_reserva');
     }
+
+    #[Route('/reservas/calendario', name: 'reserva_calendario')]
+public function calendario(): Response {
+    return $this->render('reserva/calendario.html.twig', [
+        'titulo' => 'Calendario de reservas',
+    ]);}
+
+
 }
