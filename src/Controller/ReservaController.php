@@ -10,6 +10,7 @@ use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -209,11 +210,157 @@ class ReservaController extends AbstractController
         return $this->redirectToRoute('app_reserva');
     }
 
-    #[Route('/reservas/calendario', name: 'reserva_calendario')]
-public function calendario(): Response {
-    return $this->render('reserva/calendario.html.twig', [
-        'titulo' => 'Calendario de reservas',
-    ]);}
+   #[Route('/reservas/calendario', name: 'reserva_calendario')]
+    public function calendario(Request $request, EntityManagerInterface $em): Response
+    {
+        // Año/mes a visualizar (por defecto, el actual)
+        $now   = new \DateTimeImmutable('today');
+        $year  = max(1, (int) $request->query->get('year', (int) $now->format('Y')));
+        $month = max(1, min(12, (int) $request->query->get('month', (int) $now->format('n')))); // 1..12
 
+        $monthStart = new \DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month));
+        $monthEnd   = $monthStart->modify('first day of next month');
 
+        // “Futuras”: desde hoy o desde el inicio del mes (el que sea más tarde)
+        $from = $monthStart < $now ? $now : $monthStart;
+
+        // Cargar clases de ese rango, junto con profesor y reservas (para contar)
+        $qb = $em->getRepository(Clase::class)->createQueryBuilder('c')
+            ->leftJoin('c.profesor', 'p')->addSelect('p')
+            ->leftJoin('c.reservas', 'r')->addSelect('r')
+            ->where('c.fecha >= :from AND c.fecha < :end')
+            ->setParameter('from', $from)
+            ->setParameter('end',  $monthEnd)
+            ->orderBy('c.fecha', 'ASC')
+            ->addOrderBy('c.hora', 'ASC');
+
+        $clases = $qb->getQuery()->getResult();
+
+        // Normalizamos a un array “plano” que el front entiende fácil
+        $payload = array_map(function (Clase $c) {
+            $fecha = $c->getFecha(); // DATE_MUTABLE (día)
+            $hora  = $c->getHora();  // TIME_MUTABLE (hora)
+            $limite   = (int) ($c->getLimite() ?? 0);
+            $enrolled = $c->getReservas()->count();
+
+            $teacher = '';
+            if ($c->getProfesor()) {
+                $prof = $c->getProfesor();
+                $teacher = (string) $prof->getUsuario()->getNombre();
+            }
+
+            return [
+                'id'        => $c->getId(),
+                'date'      => $fecha ? $fecha->format('Y-m-d') : null,
+                'time'      => $hora ? $hora->format('H:i') : null,
+                'name'      => (string) $c->getNombre(),
+                'teacher'   => $teacher,
+                'capacity'  => $limite,
+                'enrolled'  => $enrolled,
+                'is_full'   => $limite > 0 ? ($enrolled >= $limite) : false,
+                'duration'  => $c->getDuracion(),
+                'place'     => $c->getLugar(),
+            ];
+        }, $clases);
+
+        // Filtramos por seguridad si no hubiera fecha
+        $payload = array_values(array_filter($payload, fn($e) => $e['date'] !== null));
+
+        return $this->render('reserva/calendario.html.twig', [
+            'titulo'     => 'Calendario de reservas',
+            'year'       => $year,
+            'month'      => $month, // 1..12
+            'clases'     => $payload,
+        ]);
+    }
+
+ #[Route('/reservas/api/clases', name: 'api_reservas_clases', methods: ['GET'])]
+    public function clasesMes(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $year  = (int) $request->query->get('year');
+        $month = (int) $request->query->get('month'); // 1..12
+
+        if ($year < 2000 || $month < 1 || $month > 12) {
+            return $this->json(['error' => 'Parámetros inválidos'], 400);
+        }
+
+        // Primer día del mes / primer día del mes siguiente
+        $start = new \DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month));
+        $end   = $start->modify('first day of next month');
+
+        // Campo de fecha: c.fecha (DATE_MUTABLE)
+        $qb = $em->createQueryBuilder()
+            ->select('c', 'p') // precarga profesor para evitar N+1 si lo necesitas luego
+            ->from(Clase::class, 'c')
+            ->leftJoin('c.profesor', 'p')
+            ->where('c.fecha >= :start AND c.fecha < :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('c.fecha', 'ASC')
+            ->addOrderBy('c.hora', 'ASC');
+
+        $clases = $qb->getQuery()->getResult();
+
+        // Respuesta para pintar chips del calendario (por día)
+        $data = array_map(function (Clase $c) {
+            $fecha = $c->getFecha(); // \DateTime (solo fecha)
+            $hora  = $c->getHora();  // \DateTime (solo hora)
+
+            return [
+                'id'   => $c->getId(),
+                'date' => $fecha ? $fecha->format('Y-m-d') : null,
+                'name' => (string) $c->getNombre(),
+                'time' => $hora ? $hora->format('H:i') : null,
+            ];
+        }, $clases);
+
+        // Filtra por si alguna clase no tuviera fecha (no debería pasar)
+        $data = array_values(array_filter($data, fn ($e) => $e['date'] !== null));
+
+        return $this->json($data);
+    }
+
+    #[Route('/reservas/api/clase/{id}', name: 'api_reservas_clase_detalle', methods: ['GET'])]
+    public function claseDetalle(int $id, EntityManagerInterface $em): JsonResponse
+    {
+        /** @var Clase|null $c */
+        $c = $em->getRepository(Clase::class)->find($id);
+        if (!$c) {
+            return $this->json(['error' => 'No encontrada'], 404);
+        }
+
+        $fecha = $c->getFecha(); // \DateTime (fecha)
+        $hora  = $c->getHora();  // \DateTime (hora)
+        $limite = (int) ($c->getLimite() ?? 0);
+
+        // Profesor puede tener getNombre(); si no, usa __toString()
+        $prof = $c->getProfesor();
+        $teacher = '';
+        if ($prof) {
+            if (method_exists($prof, 'getNombre')) {
+                $teacher = (string) $prof->getUsuario()->getNombre();
+            } else {
+                $teacher = (string) $prof;
+            }
+        }
+
+        // Numero de reservas apuntadas
+        $enrolled = $c->getReservas()->count();
+
+        $data = [
+            'id'        => $c->getId(),
+            'name'      => (string) $c->getNombre(),
+            'teacher'   => $teacher,
+            'date'      => $fecha ? $fecha->format('Y-m-d') : null,
+            'time'      => $hora ? $hora->format('H:i') : null,
+            'capacity'  => $limite,
+            'enrolled'  => $enrolled,
+            'is_full'   => $limite > 0 ? ($enrolled >= $limite) : false,
+            // Campos extra útiles que sí tienes en la entidad:
+            'duration'  => $c->getDuracion(),
+            'place'     => $c->getLugar(),
+        ];
+
+        return $this->json($data);
+    }
 }

@@ -90,6 +90,42 @@
   }
   @media (min-width: 992px) { .day { min-height: 150px; } }
 </style>
+<!-- Modal para detalle de clase -->
+<div class="modal fade" id="classDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="classModalTitle">Detalle de clase</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="classModalLoading" class="d-none">Cargando…</div>
+        <div id="classModalError" class="alert alert-danger d-none"></div>
+        <dl id="classModalContent" class="row mb-0 d-none">
+          <dt class="col-5">Nombre</dt><dd class="col-7" id="cm-name"></dd>
+          <dt class="col-5">Profesor/a</dt><dd class="col-7" id="cm-teacher"></dd>
+          <dt class="col-5">Fecha</dt><dd class="col-7" id="cm-date"></dd>
+          <dt class="col-5">Horario</dt><dd class="col-7" id="cm-time"></dd>
+          <dt class="col-5">Aforo</dt><dd class="col-7" id="cm-capacity"></dd>
+          <dt class="col-5">Apuntados</dt><dd class="col-7" id="cm-enrolled"></dd>
+          <dt class="col-5">Estado</dt><dd class="col-7" id="cm-status"></dd>
+          <dt class="col-5">Descripción</dt><dd class="col-7" id="cm-description"></dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{# Variables iniciales para el JS #}
+<script>
+  window.CALENDAR_INIT = {
+    year:  {{ year|default(date().format('Y')) }},
+    month: {{ month|default(date().format('n')) }}, // 1..12
+    clases: {{ clases|json_encode(constant('JSON_UNESCAPED_UNICODE'))|raw }}
+  };
+</script>
 
 <!-- Carga del JavaScript externo -->
 <script src="{{ asset('js/reservas/reservas.js') }}"></script>

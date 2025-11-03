@@ -33,13 +33,16 @@
     const mondayFirstDayOfWeekIndex = (y, m) => (new Date(y, m, 1).getDay() + 6) % 7;
 
     function parseParams(){
-      const p = new URLSearchParams(window.location.search);
-      const y = parseInt(p.get('year'), 10);
-      const m = parseInt(p.get('month'), 10); // 1..12
-      const now = new Date();
-      state.year = Number.isFinite(y) ? y : now.getFullYear();
-      state.month = Number.isFinite(m) ? (m - 1) : now.getMonth();
-    }
+  const init = window.CALENDAR_INIT || {};
+  if (Number.isFinite(init.year) && Number.isFinite(init.month)) {
+    state.year = init.year;
+    state.month = init.month - 1; // 0..11
+  } else {
+    const base = new Date();
+    state.year = base.getFullYear();
+    state.month = base.getMonth();
+  }
+}
 
     function syncParams(){
       const p = new URLSearchParams(window.location.search);
@@ -111,6 +114,66 @@
 
       syncParams();
     }
+    function paintFromInit(){
+  const grid = document.getElementById('calendarGrid');
+  const list = (window.CALENDAR_INIT && Array.isArray(window.CALENDAR_INIT.clases))
+    ? window.CALENDAR_INIT.clases : [];
+
+  // Limpia contenido de todos los días
+  grid.querySelectorAll('.day .day-content').forEach(el => el.innerHTML = '');
+
+  // Agrupa por fecha
+  const byDate = list.reduce((acc, e) => {
+    (acc[e.date] ||= []).push(e);
+    return acc;
+  }, {});
+
+  Object.entries(byDate).forEach(([iso, clases]) => {
+    const target = grid.querySelector(`[data-date="${iso}"] .day-content`);
+    if (!target) return;
+    clases.sort((a,b) => String(a.time||'').localeCompare(String(b.time||'')));
+    clases.forEach(entry => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'class-chip btn btn-sm btn-light';
+      chip.textContent = entry.time ? `${entry.time} · ${entry.name}` : entry.name;
+      chip.addEventListener('click', () => openClassModalFromEntry(entry));
+      target.appendChild(chip);
+    });
+  });
+}
+function setModalState({loading=false, error=null, data=null}){
+  const l = document.getElementById('classModalLoading');
+  const e = document.getElementById('classModalError');
+  const c = document.getElementById('classModalContent');
+  l && l.classList.toggle('d-none', !loading);
+  e && e.classList.toggle('d-none', !error);
+  c && c.classList.toggle('d-none', !data);
+  if(e && error) e.textContent = error;
+  if(c && data){
+    document.getElementById('cm-name').textContent      = data.name || '';
+    document.getElementById('cm-teacher').textContent   = data.teacher || '';
+    document.getElementById('cm-date').textContent      = data.date || '';
+    document.getElementById('cm-time').textContent      = data.time || '';
+    document.getElementById('cm-capacity').textContent  = data.capacity ?? '';
+    document.getElementById('cm-enrolled').textContent  = data.enrolled ?? '';
+    document.getElementById('cm-status').textContent    = data.is_full ? 'Completa' : 'Disponible';
+    document.getElementById('cm-description').textContent = data.place
+      ? `Lugar: ${data.place} · Duración: ${data.duration || '-'} min`
+      : (data.duration ? `Duración: ${data.duration} min` : '');
+  }
+}
+
+function openClassModalFromEntry(entry){
+  const el = document.getElementById('classDetailModal');
+  if (!el) return;
+  const bs = window.bootstrap || window.Bootstrap;
+  if (!bs || !bs.Modal) return;
+  const modal = new bs.Modal(el);
+  setModalState({data: entry});
+  modal.show();
+}
+
 
     function buildDayCell(year, month, day, muted){
       const cell = document.createElement('div');
@@ -142,13 +205,14 @@
       return cell;
     }
 
-    function goTo(year, month){
-      while(month < 0){ month += 12; year -= 1; }
-      while(month > 11){ month -= 12; year += 1; }
-      state.year = year;
-      state.month = month;
-      render();
-    }
+  function goTo(year, month){
+  while(month < 0){ month += 12; year -= 1; }
+  while(month > 11){ month -= 12; year += 1; }
+  // navega al servidor para traer las clases del nuevo mes:
+  const params = new URLSearchParams({ year: String(year), month: String(month + 1) });
+  window.location.search = params.toString();
+}
+
 
     function wireEvents(){
       prevBtn && prevBtn.addEventListener('click', () => goTo(state.year, state.month - 1));
@@ -171,9 +235,20 @@
       });
     }
 
-    // --- API mínima para inyectar clases más adelante ---
+    // --- API mínima para inyectar clases y carga desde backend ---
     function getCell(dateISO){
       return grid.querySelector(`[data-date="${dateISO}"] .day-content`);
+    }
+
+    function renderChip(entry){
+      // entry: { id, date: 'YYYY-MM-DD', name, time }
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'class-chip btn btn-sm btn-light';
+      chip.textContent = entry.time ? `${entry.time} · ${entry.name}` : entry.name;
+      chip.dataset.classId = entry.id;
+      chip.addEventListener('click', () => openClassModal(entry.id));
+      return chip;
     }
 
     function addChip(dateISO, text){
@@ -198,25 +273,109 @@
       entries.forEach(e => addChip(e.date, e.text));
     }
 
-    // Exponer un handle global opcional
-    window.ReservasCalendar = {
-      goTo,
-      render,
-      addChip,
-      clearDay,
-      addMany
-    };
+    async function loadMonthData(year, month){
+      // Backend Symfony: GET /reservas/api/clases?year=YYYY&month=MM (1..12)
+      const q = new URLSearchParams({ year: String(year), month: String(month + 1) });
+      const res = await fetch(`/reservas/api/clases?${q.toString()}`, { headers: { 'Accept': 'application/json' } });
+      if(!res.ok) throw new Error('No se pudo cargar el calendario');
+      const data = await res.json();
+      // data esperado: Array<{ id, date: 'YYYY-MM-DD', name, time? }>
+      return data;
+    }
+
+    function paintMonthEntries(entries){
+      // Limpia todos los días primero
+      grid.querySelectorAll('.day').forEach(day => {
+        const content = day.querySelector('.day-content');
+        if(content) content.innerHTML = '';
+      });
+      // Agrupar por fecha
+      const byDate = entries.reduce((acc, e) => {
+        (acc[e.date] ||= []).push(e); return acc;
+      }, {});
+      Object.entries(byDate).forEach(([dateISO, list]) => {
+        const target = getCell(dateISO);
+        if(!target) return;
+        list.sort((a,b) => String(a.time||'').localeCompare(String(b.time||'')));
+        list.forEach(e => target.appendChild(renderChip(e)));
+      });
+    }
+
+    async function refreshData(){
+      try{
+        const entries = await loadMonthData(state.year, state.month);
+        paintMonthEntries(entries);
+      }catch(err){
+        console.error(err);
+      }
+    }
+
+    // --- Modal de detalle ---
+    let modal, bs;
+    function ensureModal(){
+      if(modal) return modal;
+      const el = document.getElementById('classDetailModal');
+      if(!el) return null;
+      // requiere Bootstrap JS global
+      // eslint-disable-next-line no-undef
+      bs = window.bootstrap || window.Bootstrap || null;
+      if(!bs || !bs.Modal){
+        console.warn('Bootstrap Modal no disponible.');
+        return null;
+      }
+      modal = new bs.Modal(el);
+      return modal;
+    }
+
+    function setModalState({loading=false, error=null, data=null}){
+      const l = document.getElementById('classModalLoading');
+      const e = document.getElementById('classModalError');
+      const c = document.getElementById('classModalContent');
+      l && l.classList.toggle('d-none', !loading);
+      e && e.classList.toggle('d-none', !error);
+      c && c.classList.toggle('d-none', !data);
+      if(e && error) e.textContent = error;
+      if(c && data){
+        document.getElementById('cm-name').textContent = data.name || '';
+        document.getElementById('cm-teacher').textContent = data.teacher || '';
+        document.getElementById('cm-date').textContent = data.date || '';
+        document.getElementById('cm-time').textContent = data.time || '';
+        document.getElementById('cm-capacity').textContent = data.capacity ?? '';
+        document.getElementById('cm-enrolled').textContent = data.enrolled ?? '';
+        document.getElementById('cm-status').textContent = data.is_full ? 'Completa' : 'Disponible';
+        document.getElementById('cm-description').textContent = data.description || '';
+      }
+    }
+
+    async function openClassModal(classId){
+      const m = ensureModal();
+      if(!m) return;
+      setModalState({loading:true});
+      m.show();
+      try{
+        const res = await fetch(`/reservas/api/clase/${classId}`, { headers: { 'Accept':'application/json' } });
+        if(!res.ok) throw new Error('No se pudo cargar el detalle');
+        const data = await res.json();
+        setModalState({data});
+      }catch(err){
+        setModalState({error: err.message});
+      }
+    }
 
     // --- Inicio ---
     parseParams();
     fillSelects();
     wireEvents();
     render();
+    // Cargar datos del mes inicial
+    refreshData();
   }
 
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', boot);
   } else {
     boot();
+    paintFromInit();
+
   }
 })();
