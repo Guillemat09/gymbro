@@ -15,249 +15,313 @@ use Symfony\Component\Form\Extension\Core\Type\TimeType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
-use Knp\Component\Pager\PaginatorInterface; // ✅ IMPORTANTE: Añadido para la paginación
 
 final class ClaseController extends AbstractController
 {
-#[Route('/clase', name: 'app_clase')]
-public function index(EntityManagerInterface $em): Response
-{
-    // Obtener todas las clases sin filtros ni paginación
-    $clases = $em->getRepository(Clase::class)->createQueryBuilder('c')
-        ->leftJoin('c.profesor', 'p')
-        ->leftJoin('p.usuario', 'u')
-        ->addSelect('p', 'u')
-        ->addOrderBy('c.fecha', 'ASC')
-        ->addOrderBy('c.hora', 'ASC')
-        ->getQuery()
-        ->getResult();
+    /** Busca el Profesor vinculado al usuario autenticado (si existe) */
+    private function getProfesorActual(EntityManagerInterface $em): ?Profesor
+    {
+        $user = $this->getUser();
+        if (!$user) return null;
+        return $em->getRepository(Profesor::class)->findOneBy(['usuario' => $user]);
+    }
 
-    return $this->render('clase/index.html.twig', [
-        'clases' => $clases,
-        'titulo' => 'Listado de clases',
-    ]);
-}
-
-#[Route('/clase/nueva', name: 'clase_nueva')]
-public function nueva(Request $request, EntityManagerInterface $em): Response
-{
-    $clase = new Clase();
-
-    // Detectar si es profesor y obtener su entidad Profesor (si existe)
-    $esProfesor = $this->isGranted('ROLE_PROFESOR');
-    $profesorActual = null;
-    if ($esProfesor && \method_exists($this->getUser(), 'getProfesor')) {
-        $profesorActual = $this->getUser()->getProfesor();
-        if ($profesorActual) {
-            // Precargar en la entidad para que el form ya lo tenga
-            $clase->setProfesor($profesorActual);
+    /**
+     * Garantiza que exista una fila Profesor para el usuario con ROLE_PROFESOR.
+     * Si no existe, la crea con valores por defecto válidos para campos NOT NULL.
+     */
+    private function ensureProfesorActual(EntityManagerInterface $em): ?Profesor
+    {
+        $user = $this->getUser();
+        if (!$user) {
+            return null;
         }
-    }
 
-    // Builder base
-    $builder = $this->createFormBuilder($clase)
-        ->add('nombre', TextType::class, [
-            'label' => 'Nombre de la clase',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('fecha', DateType::class, [
-            'label' => 'Fecha',
-            'widget' => 'single_text',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('hora', TimeType::class, [
-            'label' => 'Hora',
-            'widget' => 'single_text',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('duracion', IntegerType::class, [
-            'label' => 'Duración (minutos)',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('lugar', TextType::class, [
-            'label' => 'Lugar',
-            'required' => false,
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('limite', IntegerType::class, [
-            'label' => 'Límite de alumnos',
-            'attr' => ['class' => 'form-control'],
-        ]);
+        $repo = $em->getRepository(Profesor::class);
+        $profesor = $repo->findOneBy(['usuario' => $user]);
+        if ($profesor) {
+            return $profesor;
+        }
 
-    // Campo PROFESOR con opciones según rol
-    if ($this->isGranted('ROLE_ADMIN')) {
-        // Admin: selector completo
-        $builder->add('profesor', EntityType::class, [
-            'class' => Profesor::class,
-            'choice_label' => function (Profesor $profesor) {
-                $u = $profesor->getUsuario();
-                return $u ? $u->getNombre() . ' ' . $u->getApellido1() : 'Sin nombre';
-            },
-            'label' => 'Profesor',
-            'placeholder' => 'Selecciona un profesor',
-            'attr' => ['class' => 'form-select'],
-        ]);
-    } else {
-        // Profesor (u otros roles): limitar a su propio registro si existe
-        $builder->add('profesor', EntityType::class, [
-            'class' => Profesor::class,
-            'choices' => $profesorActual ? [$profesorActual] : [],
-            'data' => $profesorActual, // precarga
-            'choice_label' => function (Profesor $profesor) {
-                $u = $profesor->getUsuario();
-                return $u ? $u->getNombre() . ' ' . $u->getApellido1() : 'Sin nombre';
-            },
-            'label' => 'Profesor',
-            'placeholder' => $profesorActual ? false : 'Sin profesor asociado',
-            'attr' => ['class' => 'form-select'],
-        ]);
-    }
+        if ($this->isGranted('ROLE_PROFESOR')) {
+            $profesor = new Profesor();
+            $profesor->setUsuario($user);
 
-    $builder->add('guardar', SubmitType::class, [
-        'label' => 'Guardar clase',
-        'attr' => ['class' => 'btn btn-primary mt-3'],
-    ]);
-
-    $form = $builder->getForm();
-    $form->handleRequest($request);
-
-    if ($form->isSubmitted() && $form->isValid()) {
-        // Blindaje: si es profesor, forzar su propio profesor
-        if ($esProfesor) {
-            if (!$profesorActual) {
-                $this->addFlash('danger', 'No se encontró la ficha de profesor asociada al usuario.');
-                return $this->redirectToRoute('app_clase');
+            // 🔴 IMPORTANTE: Rellenar campos NOT NULL con valores por defecto
+            // Tu error indica que 'especialidad' no puede ser null
+            if (method_exists($profesor, 'setEspecialidad')) {
+                $profesor->setEspecialidad('General'); // <= valor por defecto seguro
             }
+
+            // Si tu entidad tiene otros NOT NULL (p.ej. 'activo', 'telefono', etc.),
+            // añade aquí sus valores por defecto, siempre protegidos con method_exists:
+            // if (method_exists($profesor, 'setActivo')) { $profesor->setActivo(true); }
+            // if (method_exists($profesor, 'setTelefono')) { $profesor->setTelefono(''); }
+
+            $em->persist($profesor);
+            $em->flush();
+
+            return $profesor;
+        }
+
+        return null;
+    }
+
+    /** Manda a flash todos los errores del form (útil cuando “no hace nada”) */
+    private function flashFormErrors($form): void
+    {
+        foreach ($form->getErrors(true) as $error) {
+            $this->addFlash('danger', $error->getMessage());
+        }
+    }
+
+    #[Route('/clase', name: 'app_clase', methods: ['GET'])]
+    public function index(EntityManagerInterface $em): Response
+    {
+        $clases = $em->getRepository(Clase::class)->createQueryBuilder('c')
+            ->leftJoin('c.profesor', 'p')->addSelect('p')
+            ->leftJoin('p.usuario', 'u')->addSelect('u')
+            ->addOrderBy('c.fecha', 'ASC')
+            ->addOrderBy('c.hora', 'ASC')
+            ->getQuery()->getResult();
+
+        return $this->render('clase/index.html.twig', [
+            'clases' => $clases,
+            'titulo' => 'Listado de clases',
+        ]);
+    }
+
+    #[Route('/clase/nueva', name: 'clase_nueva', methods: ['GET','POST'])]
+    public function nueva(Request $request, EntityManagerInterface $em): Response
+    {
+        $clase = new Clase();
+
+        $esProfesor = $this->isGranted('ROLE_PROFESOR');
+        // Garantiza que exista Profesor si eres ROLE_PROFESOR (y lo crea con defaults)
+        $profesorActual = $this->ensureProfesorActual($em);
+
+        if ($esProfesor && $profesorActual) {
             $clase->setProfesor($profesorActual);
         }
 
-        $em->persist($clase);
-        $em->flush();
+        $builder = $this->createFormBuilder($clase)
+            ->add('nombre', TextType::class, [
+                'label' => 'Nombre de la clase',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('fecha', DateType::class, [
+                'label' => 'Fecha',
+                'widget' => 'single_text',
+                'input'  => 'datetime',   // \DateTimeInterface en la entidad
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('hora', TimeType::class, [
+                'label' => 'Hora',
+                'widget' => 'single_text',
+                'input'  => 'datetime',   // \DateTimeInterface en la entidad
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('duracion', IntegerType::class, [
+                'label' => 'Duración (minutos)',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('lugar', TextType::class, [
+                'label' => 'Lugar',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('limite', IntegerType::class, [
+                'label' => 'Límite de alumnos',
+                'attr' => ['class' => 'form-control'],
+            ]);
 
-        return $this->redirectToRoute('app_clase');
-    }
-
-    return $this->render('clase/nueva.html.twig', [
-        'form' => $form->createView(),
-        'titulo' => 'Nueva clase',
-    ]);
-}
-
-
-  #[Route('/clase/{id}/editar', name: 'clase_editar')]
-public function editar(int $id, Request $request, EntityManagerInterface $em): Response
-{
-    $clase = $em->getRepository(Clase::class)->find($id);
-
-    if (!$clase) {
-        throw $this->createNotFoundException('Clase no encontrada');
-    }
-
-    // --- Contexto de rol/profesor actual ---
-    $esProfesor = $this->isGranted('ROLE_PROFESOR');
-    $profesorActual = null;
-    if ($esProfesor && \method_exists($this->getUser(), 'getProfesor')) {
-        $profesorActual = $this->getUser()->getProfesor();
-    }
-
-    // Si es profesor, NO permitir editar clases de otro profesor
-    if ($esProfesor) {
-        if (!$profesorActual || ($clase->getProfesor() && $clase->getProfesor()->getId() !== $profesorActual->getId())) {
-            throw $this->createAccessDeniedException('No puedes editar una clase de otro profesor.');
-        }
-    }
-
-    // --- Construcción del formulario ---
-    $builder = $this->createFormBuilder($clase)
-        ->add('nombre', TextType::class, [
-            'label' => 'Nombre de la clase',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('fecha', DateType::class, [
-            'label' => 'Fecha',
-            'widget' => 'single_text',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('hora', TimeType::class, [
-            'label' => 'Hora',
-            'widget' => 'single_text',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('duracion', IntegerType::class, [
-            'label' => 'Duración (minutos)',
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('lugar', TextType::class, [
-            'label' => 'Lugar',
-            'required' => false,
-            'attr' => ['class' => 'form-control'],
-        ])
-        ->add('limite', IntegerType::class, [
-            'label' => 'Límite de alumnos',
-            'attr' => ['class' => 'form-control'],
-        ]);
-
-    if ($this->isGranted('ROLE_ADMIN')) {
-        // Admin: selector completo
-        $builder->add('profesor', EntityType::class, [
-            'class' => Profesor::class,
-            'choice_label' => function (Profesor $profesor) {
-                $u = $profesor->getUsuario();
-                return $u ? $u->getNombre() . ' ' . $u->getApellido1() : 'Sin nombre';
-            },
-            'label' => 'Profesor',
-            'placeholder' => 'Selecciona un profesor',
-            'attr' => ['class' => 'form-select'],
-        ]);
-    } else {
-        // Profesor: limitar a su propio registro y precargar
-        $builder->add('profesor', EntityType::class, [
-            'class' => Profesor::class,
-            'choices' => $profesorActual ? [$profesorActual] : [],
-            'data' => $profesorActual ?: $clase->getProfesor(),
-            'choice_label' => function (Profesor $profesor) {
-                $u = $profesor->getUsuario();
-                return $u ? $u->getNombre() . ' ' . $u->getApellido1() : 'Sin nombre';
-            },
-            'label' => 'Profesor',
-            'placeholder' => $profesorActual ? false : 'Sin profesor asociado',
-            'attr' => ['class' => 'form-select'],
-        ]);
-    }
-
-    $builder->add('guardar', SubmitType::class, [
-        'label' => 'Guardar cambios',
-        'attr' => ['class' => 'btn btn-primary mt-3'],
-    ]);
-
-    $form = $builder->getForm();
-    $form->handleRequest($request);
-
-    if ($form->isSubmitted() && $form->isValid()) {
-        // Blindaje: si es profesor, forzar su propio Profesor
-        if ($esProfesor) {
-            if (!$profesorActual) {
-                $this->addFlash('danger', 'No se encontró la ficha de profesor asociada al usuario.');
-                return $this->redirectToRoute('app_clase');
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $builder->add('profesor', EntityType::class, [
+                'class' => Profesor::class,
+                'choice_label' => function (Profesor $profesor) {
+                    $u = $profesor->getUsuario();
+                    return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '')) : 'Sin nombre';
+                },
+                'label' => 'Profesor',
+                'placeholder' => 'Selecciona un profesor',
+                'attr' => ['class' => 'form-select'],
+                'required' => true,
+            ]);
+        } else {
+            // Incluir como choices el suyo y (por robustez) el que pudiera venir precargado
+            $choices = [];
+            if ($profesorActual) { $choices[] = $profesorActual; }
+            if ($clase->getProfesor() && (!$profesorActual || $clase->getProfesor()->getId() !== $profesorActual->getId())) {
+                $choices[] = $clase->getProfesor();
             }
-            $clase->setProfesor($profesorActual);
+
+            $builder->add('profesor', EntityType::class, [
+                'class' => Profesor::class,
+                'choices' => $choices,
+                'data' => $profesorActual ?: $clase->getProfesor(),
+                'choice_label' => function (Profesor $profesor) {
+                    $u = $profesor->getUsuario();
+                    return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '')) : 'Sin nombre';
+                },
+                'label' => 'Profesor',
+                'placeholder' => $profesorActual ? false : 'Sin profesor asociado',
+                'attr' => ['class' => 'form-select'],
+                'required' => false,
+            ]);
         }
 
-        $em->flush();
-        return $this->redirectToRoute('app_clase');
+        $builder->add('guardar', SubmitType::class, [
+            'label' => 'Guardar clase',
+            'attr' => ['class' => 'btn btn-primary mt-3'],
+        ]);
+
+        $form = $builder->getForm();
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && !$form->isValid()) {
+            $this->flashFormErrors($form);
+        }
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if ($esProfesor) {
+                // Asegura de nuevo (por si cambió algo)
+                $profesorActual = $this->ensureProfesorActual($em);
+                $clase->setProfesor($profesorActual);
+            }
+
+            $em->persist($clase);
+            $em->flush();
+
+            $this->addFlash('success', 'Clase creada correctamente.');
+            return $this->redirectToRoute('app_clase');
+        }
+
+        return $this->render('clase/nueva.html.twig', [
+            'form' => $form->createView(),
+            'titulo' => 'Nueva clase',
+        ]);
     }
 
-    return $this->render('clase/editar.html.twig', [
-        'form' => $form->createView(),
-        'titulo' => 'Editar clase',
-    ]);
-}
+    #[Route('/clase/{id}/editar', name: 'clase_editar', requirements: ['id' => '\d+'], methods: ['GET','POST'])]
+    public function editar(int $id, Request $request, EntityManagerInterface $em): Response
+    {
+        $clase = $em->getRepository(Clase::class)->find($id);
+        if (!$clase) {
+            throw $this->createNotFoundException('Clase no encontrada');
+        }
 
-    #[Route('/clase/{id}', name: 'clase_visualizar')]
+        $esProfesor = $this->isGranted('ROLE_PROFESOR');
+        // Garantiza que exista Profesor si eres ROLE_PROFESOR (con defaults)
+        $profesorActual = $this->ensureProfesorActual($em);
+
+        // Si es profesor (no admin), debe ser dueño de la clase
+        if ($esProfesor && !$this->isGranted('ROLE_ADMIN')) {
+            if (!$profesorActual || $clase->getProfesor()?->getId() !== $profesorActual->getId()) {
+                throw $this->createAccessDeniedException('No puedes editar una clase de otro profesor.');
+            }
+        }
+
+        $builder = $this->createFormBuilder($clase)
+            ->add('nombre', TextType::class, [
+                'label' => 'Nombre de la clase',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('fecha', DateType::class, [
+                'label' => 'Fecha',
+                'widget' => 'single_text',
+                'input'  => 'datetime',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('hora', TimeType::class, [
+                'label' => 'Hora',
+                'widget' => 'single_text',
+                'input'  => 'datetime',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('duracion', IntegerType::class, [
+                'label' => 'Duración (minutos)',
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('lugar', TextType::class, [
+                'label' => 'Lugar',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
+            ->add('limite', IntegerType::class, [
+                'label' => 'Límite de alumnos',
+                'attr' => ['class' => 'form-control'],
+            ]);
+
+        if ($this->isGranted('ROLE_ADMIN')) {
+            $builder->add('profesor', EntityType::class, [
+                'class' => Profesor::class,
+                'choice_label' => function (Profesor $profesor) {
+                    $u = $profesor->getUsuario();
+                    return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '')) : 'Sin nombre';
+                },
+                'label' => 'Profesor',
+                'placeholder' => 'Selecciona un profesor',
+                'attr' => ['class' => 'form-select'],
+                'required' => true,
+            ]);
+        } else {
+            // Choices: su propio profesor y (por robustez) el ya asociado a la clase
+            $choices = [];
+            if ($profesorActual) { $choices[] = $profesorActual; }
+            if ($clase->getProfesor() && (!$profesorActual || $clase->getProfesor()->getId() !== $profesorActual->getId())) {
+                $choices[] = $clase->getProfesor();
+            }
+
+            $builder->add('profesor', EntityType::class, [
+                'class' => Profesor::class,
+                'choices' => $choices,
+                'data' => $profesorActual ?: $clase->getProfesor(),
+                'choice_label' => function (Profesor $profesor) {
+                    $u = $profesor->getUsuario();
+                    return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '')) : 'Sin nombre';
+                },
+                'label' => 'Profesor',
+                'placeholder' => $profesorActual ? false : 'Sin profesor asociado',
+                'attr' => ['class' => 'form-select'],
+                'required' => false,
+            ]);
+        }
+
+        $builder->add('guardar', SubmitType::class, [
+            'label' => 'Guardar cambios',
+            'attr' => ['class' => 'btn btn-primary mt-3'],
+        ]);
+
+        $form = $builder->getForm();
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && !$form->isValid()) {
+            $this->flashFormErrors($form);
+        }
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if ($esProfesor) {
+                // Reasegurar y fijar propietario
+                $profesorActual = $this->ensureProfesorActual($em);
+                $clase->setProfesor($profesorActual);
+            }
+
+            $em->flush();
+            $this->addFlash('success', 'Clase actualizada correctamente.');
+            return $this->redirectToRoute('app_clase');
+        }
+
+        return $this->render('clase/editar.html.twig', [
+            'form' => $form->createView(),
+            'titulo' => 'Editar clase',
+            'clase' => $clase,
+        ]);
+    }
+
+    #[Route('/clase/{id}', name: 'clase_visualizar', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function visualizar(int $id, EntityManagerInterface $em): Response
     {
         $clase = $em->getRepository(Clase::class)->find($id);
-
         if (!$clase) {
             throw $this->createNotFoundException('Clase no encontrada');
         }
@@ -268,18 +332,24 @@ public function editar(int $id, Request $request, EntityManagerInterface $em): R
         ]);
     }
 
-    #[Route('/clase/{id}/eliminar', name: 'clase_eliminar', methods: ['POST'])]
-    public function eliminar(int $id, EntityManagerInterface $em): Response
+    #[Route('/clase/{id}/eliminar', name: 'clase_eliminar', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function eliminar(Request $request, int $id, EntityManagerInterface $em): Response
     {
         $clase = $em->getRepository(Clase::class)->find($id);
-
         if (!$clase) {
             throw $this->createNotFoundException('Clase no encontrada');
+        }
+
+        $token = $request->request->get('_token');
+        if ($token !== null && !$this->isCsrfTokenValid('eliminar_clase_'.$clase->getId(), $token)) {
+            $this->addFlash('danger', 'Token CSRF inválido.');
+            return $this->redirectToRoute('app_clase');
         }
 
         $em->remove($clase);
         $em->flush();
 
+        $this->addFlash('success', 'Clase eliminada.');
         return $this->redirectToRoute('app_clase');
     }
 }

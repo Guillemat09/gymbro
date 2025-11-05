@@ -5,8 +5,20 @@
 
 {% block body %}
     <h1 class="display-5 mb-4">{{ titulo }}</h1>
+
+    {# Mensajes flash (errores de validación, éxito, etc.) #}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} mt-2">{{ message|raw }}</div>
+        {% endfor %}
+    {% endfor %}
+
     <div class="card p-4">
         {{ form_start(form) }}
+
+            {# Errores de formulario a nivel global #}
+            {{ form_errors(form) }}
+
             {{ form_row(form.nombre) }}
             {{ form_row(form.fecha) }}
             {{ form_row(form.hora) }}
@@ -16,20 +28,29 @@
 
             {# ====== PROFESOR (condicionado por rol) ====== #}
             {% if is_granted('ROLE_ADMIN') %}
-                {# Admin: selector completo #}
                 {{ form_row(form.profesor) }}
-            {% elseif is_granted('ROLE_PROFESOR') and app.user.profesor is defined and app.user.profesor %}
-                {# Profesor: NO mostrar selector; fijar su propio id #}
+            {% elseif is_granted('ROLE_PROFESOR') %}
+                {# Marcamos el campo como renderizado para que no lo pinte Symfony automáticamente #}
                 {% do form.profesor.setRendered %}
+
                 <div class="mb-3">
                     <label class="form-label">Profesor</label>
                     <div class="form-control-plaintext">
-                        {{ app.user.nombre ~ (app.user.apellido1 ? ' ' ~ app.user.apellido1 : '') }}
+                        {% if clase.profesor and clase.profesor.usuario %}
+                            {{ clase.profesor.usuario.nombre }} {{ clase.profesor.usuario.apellido1 }}
+                        {% else %}
+                            -
+                        {% endif %}
                     </div>
                 </div>
-                <input type="hidden" name="{{ form.profesor.vars.full_name }}" value="{{ app.user.profesor.id }}">
+
+                {# Enviamos el ID del profesor como hidden para que pase la validación del EntityType #}
+                <input
+                    type="hidden"
+                    name="{{ form.profesor.vars.full_name }}"
+                    value="{{ clase.profesor ? clase.profesor.id : '' }}"
+                >
             {% else %}
-                {# Otros roles (si los hubiera): mostrar selector por defecto #}
                 {{ form_row(form.profesor) }}
             {% endif %}
             {# ====== FIN PROFESOR ====== #}
@@ -40,6 +61,7 @@
             {% if form._token is defined %}
                 {{ form_row(form._token) }}
             {% endif %}
+
         {{ form_end(form, { render_rest: false }) }}
     </div>
 {% endblock %}

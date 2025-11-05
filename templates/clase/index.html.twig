@@ -38,8 +38,31 @@
                     <td class="text-center">
                         <a href="{{ path('clase_visualizar', {'id': clase.id}) }}" class="btn btn-outline-primary btn-sm" title="Visualizar"><i class="bi bi-eye"></i></a>
                         <a href="{{ path('clase_editar', {'id': clase.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar"><i class="bi bi-pencil"></i></a>
-                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar" data-bs-toggle="modal" data-bs-target="#modalEliminarClase{{ clase.id }}"><i class="bi bi-trash"></i></button>
-                        {# modal... #}
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
+                            data-bs-toggle="modal" data-bs-target="#modalEliminarClase{{ clase.id }}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+
+                        {# Modal de confirmación #}
+                        <div class="modal fade" id="modalEliminarClase{{ clase.id }}" tabindex="-1" aria-labelledby="modalLabelEliminarClase{{ clase.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="post" action="{{ path('clase_eliminar', {'id': clase.id}) }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="modalLabelEliminarClase{{ clase.id }}">¿Eliminar clase?</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            ¿Seguro que quieres eliminar la clase <strong>{{ clase.nombre }}</strong> (ID {{ clase.id }})?
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                 </tr>
             {% else %}
