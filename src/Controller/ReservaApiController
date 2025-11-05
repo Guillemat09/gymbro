@@ -1,0 +1,134 @@
+<?php
+// src/Controller/ReservaApiController.php
+namespace App\Controller;
+
+use App\Entity\Clase;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+
+#[Route('')] // sin prefijo
+final class ReservaApiController extends AbstractController
+{
+    #[Route('/reservas/calendario', name: 'reservas_calendario', methods: ['GET'])]
+    public function calendario(Request $request, EntityManagerInterface $em): Response
+    {
+        $now   = new \DateTimeImmutable('today');
+        $year  = max(1, (int) $request->query->get('year', (int) $now->format('Y')));
+        $month = max(1, min(12, (int) $request->query->get('month', (int) $now->format('n'))));
+
+        $monthStart = new \DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month));
+        $monthEnd   = $monthStart->modify('first day of next month');
+        $from       = $monthStart < $now ? $now : $monthStart;
+
+        $rows = $em->getRepository(Clase::class)->createQueryBuilder('c')
+            ->leftJoin('c.profesor', 'p')->addSelect('p')
+            ->leftJoin('c.reservas', 'r')->addSelect('r')
+            ->where('c.fecha >= :from AND c.fecha < :end')
+            ->setParameter('from', $from)
+            ->setParameter('end',  $monthEnd)
+            ->orderBy('c.fecha', 'ASC')
+            ->addOrderBy('c.hora', 'ASC')
+            ->getQuery()->getResult();
+
+        $payload = array_map(function (Clase $c) {
+            $fecha    = $c->getFecha();
+            $hora     = $c->getHora();
+            $limite   = (int) ($c->getLimite() ?? 0);
+            $enrolled = $c->getReservas()->count();
+            $teacher  = $c->getProfesor()?->getUsuario()?->getNombre() ?? '';
+
+            return [
+                'id'        => $c->getId(),
+                'date'      => $fecha ? $fecha->format('Y-m-d') : null,
+                'time'      => $hora ? $hora->format('H:i') : null,
+                'name'      => (string) $c->getNombre(),
+                'teacher'   => $teacher,
+                'capacity'  => $limite,
+                'enrolled'  => $enrolled,
+                'is_full'   => $limite > 0 ? ($enrolled >= $limite) : false,
+                'duration'  => $c->getDuracion(),
+                'place'     => $c->getLugar(),
+            ];
+        }, $rows);
+
+        $payload = array_values(array_filter($payload, fn($e) => $e['date'] !== null));
+
+        // usa tu misma plantilla actual
+        return $this->render('reserva/calendario.html.twig', [
+            'titulo' => 'Calendario de reservas',
+            'year'   => $year,
+            'month'  => $month,
+            'clases' => $payload,
+        ]);
+    }
+
+    #[Route('/reservas/api/clases', name: 'api_reservas_clases_public', methods: ['GET'])]
+    public function clasesMes(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $year  = (int) $request->query->get('year');
+        $month = (int) $request->query->get('month');
+
+        if ($year < 2000 || $month < 1 || $month > 12) {
+            return $this->json(['error' => 'Parámetros inválidos'], 400);
+        }
+
+        $start = new \DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month));
+        $end   = $start->modify('first day of next month');
+
+        $rows = $em->getRepository(Clase::class)->createQueryBuilder('c')
+            ->leftJoin('c.profesor', 'p')->addSelect('p')
+            ->where('c.fecha >= :start AND c.fecha < :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('c.fecha', 'ASC')
+            ->addOrderBy('c.hora', 'ASC')
+            ->getQuery()->getResult();
+
+        $data = array_map(function (Clase $c) {
+            $fecha = $c->getFecha();
+            $hora  = $c->getHora();
+            return [
+                'id'   => $c->getId(),
+                'date' => $fecha ? $fecha->format('Y-m-d') : null,
+                'name' => (string) $c->getNombre(),
+                'time' => $hora ? $hora->format('H:i') : null,
+            ];
+        }, $rows);
+
+        $data = array_values(array_filter($data, fn ($e) => $e['date'] !== null));
+
+        return $this->json($data);
+    }
+
+    #[Route('/reservas/api/clase/{id}', name: 'api_reservas_clase_detalle_public', requirements: ['id' => '\d+'], methods: ['GET'])]
+    public function claseDetalle(int $id, EntityManagerInterface $em): JsonResponse
+    {
+        $c = $em->getRepository(Clase::class)->find($id);
+        if (!$c) {
+            return $this->json(['error' => 'No encontrada'], 404);
+        }
+
+        $fecha   = $c->getFecha();
+        $hora    = $c->getHora();
+        $limite  = (int) ($c->getLimite() ?? 0);
+        $teacher = $c->getProfesor()?->getUsuario()?->getNombre() ?? '';
+        $enrolled = $c->getReservas()->count();
+
+        return $this->json([
+            'id'        => $c->getId(),
+            'name'      => (string) $c->getNombre(),
+            'teacher'   => $teacher,
+            'date'      => $fecha ? $fecha->format('Y-m-d') : null,
+            'time'      => $hora ? $hora->format('H:i') : null,
+            'capacity'  => $limite,
+            'enrolled'  => $enrolled,
+            'is_full'   => $limite > 0 ? ($enrolled >= $limite) : false,
+            'duration'  => $c->getDuracion(),
+            'place'     => $c->getLugar(),
+        ]);
+    }
+}

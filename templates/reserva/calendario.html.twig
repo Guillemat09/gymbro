@@ -102,7 +102,7 @@
       <div class="modal-body">
         <div id="classModalLoading" class="d-none">Cargando…</div>
         <div id="classModalError" class="alert alert-danger d-none"></div>
-        <dl id="classModalContent" class="row mb-0 d-none">
+        <dl id="classModalContent" class="row mb-2 d-none">
           <dt class="col-5">Nombre</dt><dd class="col-7" id="cm-name"></dd>
           <dt class="col-5">Profesor/a</dt><dd class="col-7" id="cm-teacher"></dd>
           <dt class="col-5">Fecha</dt><dd class="col-7" id="cm-date"></dd>
@@ -112,20 +112,36 @@
           <dt class="col-5">Estado</dt><dd class="col-7" id="cm-status"></dd>
           <dt class="col-5">Descripción</dt><dd class="col-7" id="cm-description"></dd>
         </dl>
+
+        <!-- Mensajes informativos (lleno / ya reservado) -->
+        <p id="classModalInfo" class="alert alert-info d-none mb-0"></p>
       </div>
       <div class="modal-footer">
+        <!-- Botón de reservar (se oculta si no procede) -->
+        <button id="cm-reserveBtn" type="button" class="btn btn-primary d-none">
+          Reservar esta clase
+        </button>
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
 </div>
 
-{# Variables iniciales para el JS #}
+{# === 1) Variables iniciales para el JS === #}
 <script>
   window.CALENDAR_INIT = {
     year:  {{ year|default(date().format('Y')) }},
     month: {{ month|default(date().format('n')) }}, // 1..12
     clases: {{ clases|json_encode(constant('JSON_UNESCAPED_UNICODE'))|raw }}
+  };
+</script>
+
+{# === 2) Endpoints reales para el JS (con o sin prefijo de controlador) === #}
+<script>
+  window.CALENDAR_ENDPOINTS = {
+    list: '{{ path("api_reservas_clases") }}',
+    detail: (id) => '{{ path("api_reservas_clase_detalle", {"id": 0}) }}'.replace('/0', '/' + id),
+    reserve: '{{ path("api_reservas_hacer") }}'
   };
 </script>
 

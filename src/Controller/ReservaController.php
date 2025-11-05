@@ -127,7 +127,6 @@ class ReservaController extends AbstractController
             'attr'        => ['class' => 'form-select', 'id' => 'clase-select'],
         ]);
 
-        // Si quieres un botón generado por Symfony (tu vista ya tiene el botón, así que es opcional):
         // $builder->add('guardar', SubmitType::class, ['label' => 'Guardar reserva']);
 
         $form = $builder->getForm();
@@ -210,7 +209,7 @@ class ReservaController extends AbstractController
         return $this->redirectToRoute('app_reserva');
     }
 
-   #[Route('/reservas/calendario', name: 'reserva_calendario')]
+    #[Route('/reservas/calendario', name: 'reserva_calendario')]
     public function calendario(Request $request, EntityManagerInterface $em): Response
     {
         // Año/mes a visualizar (por defecto, el actual)
@@ -274,7 +273,7 @@ class ReservaController extends AbstractController
         ]);
     }
 
- #[Route('/reservas/api/clases', name: 'api_reservas_clases', methods: ['GET'])]
+    #[Route('/reservas/api/clases', name: 'api_reservas_clases', methods: ['GET'])]
     public function clasesMes(Request $request, EntityManagerInterface $em): JsonResponse
     {
         $year  = (int) $request->query->get('year');
@@ -320,7 +319,7 @@ class ReservaController extends AbstractController
         return $this->json($data);
     }
 
-    #[Route('/reservas/api/clase/{id}', name: 'api_reservas_clase_detalle', methods: ['GET'])]
+    #[Route('/reservas/api/clase/{id}', name: 'api_reservas_clase_detalle', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function claseDetalle(int $id, EntityManagerInterface $em): JsonResponse
     {
         /** @var Clase|null $c */
@@ -329,38 +328,113 @@ class ReservaController extends AbstractController
             return $this->json(['error' => 'No encontrada'], 404);
         }
 
-        $fecha = $c->getFecha(); // \DateTime (fecha)
-        $hora  = $c->getHora();  // \DateTime (hora)
+        $fecha  = $c->getFecha(); // \DateTimeInterface|null
+        $hora   = $c->getHora();  // \DateTimeInterface|null
         $limite = (int) ($c->getLimite() ?? 0);
 
-        // Profesor puede tener getNombre(); si no, usa __toString()
-        $prof = $c->getProfesor();
+        // Construcción segura del nombre del profesor (sin (string)$prof)
         $teacher = '';
-        if ($prof) {
-            if (method_exists($prof, 'getNombre')) {
-                $teacher = (string) $prof->getUsuario()->getNombre();
-            } else {
-                $teacher = (string) $prof;
-            }
+        $prof    = $c->getProfesor();
+        if ($prof && $prof->getUsuario()) {
+            $u = $prof->getUsuario();
+            $teacher = trim(($u->getNombre() ?? '') . ' ' . ($u->getApellido1() ?? ''));
         }
 
         // Numero de reservas apuntadas
         $enrolled = $c->getReservas()->count();
+        $isFull   = $limite > 0 ? ($enrolled >= $limite) : false;
 
-        $data = [
-            'id'        => $c->getId(),
-            'name'      => (string) $c->getNombre(),
-            'teacher'   => $teacher,
-            'date'      => $fecha ? $fecha->format('Y-m-d') : null,
-            'time'      => $hora ? $hora->format('H:i') : null,
-            'capacity'  => $limite,
-            'enrolled'  => $enrolled,
-            'is_full'   => $limite > 0 ? ($enrolled >= $limite) : false,
-            // Campos extra útiles que sí tienes en la entidad:
-            'duration'  => $c->getDuracion(),
-            'place'     => $c->getLugar(),
-        ];
+        // Estado para el alumno conectado
+        $alreadyReserved = false;
+        $canReserve      = false;
+        if ($this->isGranted('ROLE_ALUMNO')) {
+            $usuario = $this->getUser();
+            $alumno  = \method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
+            if ($alumno) {
+                $existing = $em->getRepository(Reserva::class)
+                    ->findOneBy(['alumno' => $alumno, 'clase' => $c]);
+                $alreadyReserved = (bool) $existing;
+                $canReserve = !$isFull && !$alreadyReserved;
+            }
+        }
 
-        return $this->json($data);
+        return $this->json([
+            'id'               => $c->getId(),
+            'name'             => (string) $c->getNombre(),
+            'teacher'          => $teacher,
+            'date'             => $fecha ? $fecha->format('Y-m-d') : null,
+            'time'             => $hora ? $hora->format('H:i') : null,
+            'capacity'         => $limite,
+            'enrolled'         => $enrolled,
+            'is_full'          => $isFull,
+            'duration'         => $c->getDuracion(),
+            'place'            => $c->getLugar(),
+            // extras para el front:
+            'already_reserved' => $alreadyReserved,
+            'can_reserve'      => $canReserve,
+        ]);
+    }
+
+    // ====== NUEVO: endpoint para reservar desde el calendario ======
+    #[Route('/reservas/api/reservar', name: 'api_reservas_hacer', methods: ['POST'])]
+    public function reservarDesdeCalendario(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        // Por defecto: permitir solo a alumnos reservar desde el calendario.
+        if (!$this->isGranted('ROLE_ALUMNO')) {
+            return $this->json(['ok' => false, 'error' => 'Solo un alumno puede reservar desde el calendario.'], 403);
+        }
+
+        $payload = json_decode($request->getContent() ?? '', true) ?: [];
+        $classId = (int)($payload['clase_id'] ?? 0);
+        if ($classId <= 0) {
+            return $this->json(['ok' => false, 'error' => 'clase_id inválido'], 400);
+        }
+
+        /** @var Clase|null $clase */
+        $clase = $em->getRepository(Clase::class)->find($classId);
+        if (!$clase) {
+            return $this->json(['ok' => false, 'error' => 'Clase no encontrada'], 404);
+        }
+
+        $usuario = $this->getUser();
+        $alumno  = \method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
+        if (!$alumno) {
+            return $this->json(['ok' => false, 'error' => 'Tu usuario no está vinculado a un alumno.'], 400);
+        }
+
+        // No duplicar reserva del mismo alumno para la misma clase
+        $existing = $em->getRepository(Reserva::class)->findOneBy([
+            'alumno' => $alumno,
+            'clase'  => $clase,
+        ]);
+        if ($existing) {
+            return $this->json(['ok' => false, 'error' => 'Ya estás apuntado a esta clase.'], 409);
+        }
+
+        // Comprobar aforo
+        $limite   = (int) ($clase->getLimite() ?? 0);
+        $enrolled = $clase->getReservas()->count();
+        if ($limite > 0 && $enrolled >= $limite) {
+            return $this->json(['ok' => false, 'error' => 'La clase está completa.'], 409);
+        }
+
+        // Crear reserva
+        $reserva = new Reserva();
+        $reserva->setAlumno($alumno);
+        $reserva->setClase($clase);
+        $reserva->setFecha(new \DateTime());
+        $em->persist($reserva);
+        $em->flush();
+
+        // Recuento actualizado
+        $newCount = $clase->getReservas()->count();
+        $isFull   = $limite > 0 ? ($newCount >= $limite) : false;
+
+        return $this->json([
+            'ok'       => true,
+            'message'  => 'Reserva creada correctamente.',
+            'enrolled' => $newCount,
+            'is_full'  => $isFull,
+        ], 201);
     }
 }
