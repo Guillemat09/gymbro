@@ -93,16 +93,6 @@ class UsuarioController extends AbstractController
                 'required' => false,
                 'attr' => ['class' => 'form-control'],
             ])
-            ->add('telefono', TextType::class, [
-                'label' => 'Teléfono',
-                'required' => false,
-                'attr' => ['class' => 'form-control'],
-            ])
-            ->add('direccion', TextType::class, [
-                'label' => 'Dirección',
-                'required' => false,
-                'attr' => ['class' => 'form-control'],
-            ])
             ->add('tipo', ChoiceType::class, [
                 'label' => 'Tipo de usuario',
                 'choices' => [
@@ -221,16 +211,6 @@ class UsuarioController extends AbstractController
                 'required' => false,
                 'attr' => ['class' => 'form-control'],
             ])
-            ->add('telefono', TextType::class, [
-                'label' => 'Teléfono',
-                'required' => false,
-                'attr' => ['class' => 'form-control'],
-            ])
-            ->add('direccion', TextType::class, [
-                'label' => 'Dirección',
-                'required' => false,
-                'attr' => ['class' => 'form-control'],
-            ])
             ->add('guardar', SubmitType::class, [
                 'label' => 'Guardar cambios',
                 'attr' => ['class' => 'btn btn-primary mt-3'],
@@ -268,7 +248,7 @@ class UsuarioController extends AbstractController
         return $this->render('usuario/editar.html.twig', [
             'form' => $form->createView(),
             'titulo' => 'Editar usuario',
-            'usuario' => $usuario, // <-- Añade esta línea
+            'usuario' => $usuario,
         ]);
     }
 

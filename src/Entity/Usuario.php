@@ -186,10 +186,6 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setAlumno(?Alumno $alumno): self
     {
-        // Desvincular el actual
-        if ($this->alumno && $this->alumno !== $alumno) {
-            $this->alumno->setUsuario(null);
-        }
 
         $this->alumno = $alumno;
 
@@ -208,9 +204,7 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setProfesor(?Profesor $profesor): self
     {
-        if ($this->profesor && $this->profesor !== $profesor) {
-            $this->profesor->setUsuario(null);
-        }
+
 
         $this->profesor = $profesor;
 
@@ -228,9 +222,6 @@ class Usuario implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function setAdministrador(?Administrador $administrador): self
     {
-        if ($this->administrador && $this->administrador !== $administrador) {
-            $this->administrador->setUsuario(null);
-        }
 
         $this->administrador = $administrador;
 

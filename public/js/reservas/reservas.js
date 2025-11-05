@@ -114,7 +114,7 @@
 
       syncParams();
     }
-    function paintFromInit(){
+    function paintFromInit() {
   const grid = document.getElementById('calendarGrid');
   const list = (window.CALENDAR_INIT && Array.isArray(window.CALENDAR_INIT.clases))
     ? window.CALENDAR_INIT.clases : [];
@@ -131,7 +131,7 @@
   Object.entries(byDate).forEach(([iso, clases]) => {
     const target = grid.querySelector(`[data-date="${iso}"] .day-content`);
     if (!target) return;
-    clases.sort((a,b) => String(a.time||'').localeCompare(String(b.time||'')));
+    clases.sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
     clases.forEach(entry => {
       const chip = document.createElement('button');
       chip.type = 'button';

@@ -20,101 +20,21 @@ use Knp\Component\Pager\PaginatorInterface; // ✅ IMPORTANTE: Añadido para la 
 final class ClaseController extends AbstractController
 {
 #[Route('/clase', name: 'app_clase')]
-public function index(EntityManagerInterface $em, Request $request, PaginatorInterface $paginator): Response
+public function index(EntityManagerInterface $em): Response
 {
-    // Tamaños por página permitidos
-    $perPageOptions = [10, 25, 50, 100];
-    $perPage = (int) $request->query->get('per_page', 10);
-    if (!in_array($perPage, $perPageOptions, true)) {
-        $perPage = 10;
-    }
-    $page = max(1, $request->query->getInt('page', 1));
-
-    // ===== Filtros =====
-    $q            = trim((string) $request->query->get('q', '')); // texto libre: nombre, lugar, profesor
-    $fechaDesdeQ  = (string) $request->query->get('fecha_desde', '');
-    $fechaHastaQ  = (string) $request->query->get('fecha_hasta', '');
-    $profesorId   = $request->query->getInt('profesor_id', 0);
-
-    $fechaDesde = null;
-    $fechaHasta = null;
-    try {
-        if ($fechaDesdeQ !== '') {
-            $fechaDesde = new \DateTimeImmutable($fechaDesdeQ);
-        }
-        if ($fechaHastaQ !== '') {
-            $fechaHasta = (new \DateTimeImmutable($fechaHastaQ))->setTime(23, 59, 59);
-        }
-    } catch (\Exception $e) {
-        // Si hay un formato inválido, ignoramos el filtro de fechas
-    }
-
-    // ===== Query base =====
-    $qb = $em->getRepository(Clase::class)->createQueryBuilder('c')
+    // Obtener todas las clases sin filtros ni paginación
+    $clases = $em->getRepository(Clase::class)->createQueryBuilder('c')
         ->leftJoin('c.profesor', 'p')
         ->leftJoin('p.usuario', 'u')
-        ->addSelect('p', 'u');
-
-    if ($q !== '') {
-        $qb->andWhere('LOWER(c.nombre) LIKE :q OR LOWER(c.lugar) LIKE :q OR LOWER(u.nombre) LIKE :q OR LOWER(u.apellido1) LIKE :q OR LOWER(u.apellido2) LIKE :q')
-           ->setParameter('q', '%'.mb_strtolower($q).'%');
-    }
-
-    if ($fechaDesde) {
-        $qb->andWhere('c.fecha >= :fd')->setParameter('fd', $fechaDesde);
-    }
-    if ($fechaHasta) {
-        $qb->andWhere('c.fecha <= :fh')->setParameter('fh', $fechaHasta);
-    }
-
-    // ===== Lógica específica para PROFESOR =====
-    if ($this->isGranted('ROLE_PROFESOR')) {
-        $usuario         = $this->getUser();
-        $profesorActual  = \method_exists($usuario, 'getProfesor') ? $usuario->getProfesor() : null;
-
-        if ($profesorActual instanceof Profesor) {
-            // Forzar filtro por el profesor actual
-            $qb->andWhere('c.profesor = :profesorActual')
-               ->setParameter('profesorActual', $profesorActual);
-
-            // Forzar el valor del selector a ese profesor
-            $profesorId = $profesorActual->getId();
-
-            // El selector solo mostrará a este profesor
-            $profesores = [$profesorActual];
-        } else {
-            // Usuario con rol profesor pero sin entidad Profesor asociada -> sin resultados
-            $qb->andWhere('1 = 0');
-            $profesores = [];
-        }
-    } else {
-        // ADMIN (u otros roles): pueden ver/filtrar por cualquier profesor
-        if ($profesorId > 0) {
-            $qb->andWhere('p.id = :profesorId')->setParameter('profesorId', $profesorId);
-        }
-
-        $profesores = $em->getRepository(Profesor::class)->createQueryBuilder('pr')
-            ->leftJoin('pr.usuario', 'uu')->addSelect('uu')
-            ->orderBy('uu.nombre', 'ASC')
-            ->getQuery()->getResult();
-    }
-
-    // Orden por defecto (KnpPaginator lo podrá sobrescribir con ?sort=&direction=)
-    $qb->addOrderBy('c.fecha', 'ASC')->addOrderBy('c.hora', 'ASC');
-
-    // ===== Paginación =====
-    $pagination = $paginator->paginate($qb, $page, $perPage);
+        ->addSelect('p', 'u')
+        ->addOrderBy('c.fecha', 'ASC')
+        ->addOrderBy('c.hora', 'ASC')
+        ->getQuery()
+        ->getResult();
 
     return $this->render('clase/index.html.twig', [
-        'clases'          => $pagination,
-        'titulo'          => 'Listado de clases',
-        'per_page'        => $perPage,
-        'perPageOptions'  => $perPageOptions,
-        'q'               => $q,
-        'fecha_desde'     => $fechaDesdeQ,
-        'fecha_hasta'     => $fechaHastaQ,
-        'profesor_id'     => $profesorId,
-        'profesores'      => $profesores, // -> en modo PROFESOR tendrá solo 1 opción
+        'clases' => $clases,
+        'titulo' => 'Listado de clases',
     ]);
 }
 
