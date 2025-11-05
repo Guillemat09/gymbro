@@ -4,9 +4,10 @@ namespace App\Controller;
 
 use App\Entity\Alumno;
 use App\Entity\Ejercicio;
-use App\Entity\RutinaEjercicios;
 use App\Entity\Rutina;
+use App\Entity\RutinaEjercicios; // ← si tu clase es singular, cámbialo a RutinaEjercicio
 use Doctrine\ORM\EntityManagerInterface;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,95 +19,77 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 
 final class RutinaController extends AbstractController
 {
- #[Route('/rutina', name: 'app_rutina')]
-public function index(
-    EntityManagerInterface $em,
-    Request $request,
-    \Knp\Component\Pager\PaginatorInterface $paginator // FQCN => sin problemas de autowiring
-): Response {
-    // Tamaños por página
-    $perPageOptions = [10, 25, 50, 100];
-    $perPage = (int) $request->query->get('per_page', 10);
-    if (!in_array($perPage, $perPageOptions, true)) {
-        $perPage = 10;
-    }
-    $page = max(1, $request->query->getInt('page', 1));
-
-    // ===== Filtros =====
-    $q        = trim((string) $request->query->get('q', '')); // texto: nombre de rutina o alumno
-    $alumnoId = $request->query->getInt('alumno_id', 0);
-
-    // ===== Query base =====
-    $qb = $em->getRepository(\App\Entity\Rutina::class)->createQueryBuilder('r')
-        ->leftJoin('r.alumno', 'a')
-        ->leftJoin('a.usuario', 'u')
-        ->addSelect('a', 'u');
-
-    if ($q !== '') {
-        $qb->andWhere('LOWER(r.nombre) LIKE :q
-                    OR LOWER(u.nombre) LIKE :q
-                    OR LOWER(u.apellido1) LIKE :q
-                    OR LOWER(u.apellido2) LIKE :q
-                    OR LOWER(u.email) LIKE :q')
-           ->setParameter('q', '%'.mb_strtolower($q).'%');
+    /** Devuelve el Alumno vinculado al usuario autenticado (si existe) */
+    private function getAlumnoActual(EntityManagerInterface $em): ?Alumno
+    {
+        $user = $this->getUser();
+        if (!$user) return null;
+        return $em->getRepository(Alumno::class)->findOneBy(['usuario' => $user]);
     }
 
-    // === FILTRO POR ROL ===
-    if ($this->isGranted('ROLE_ALUMNO')) {
-        // Forzamos a mostrar solo las rutinas del alumno actual
-        $usuarioActual = $this->getUser();
-        $alumnoActual  = \method_exists($usuarioActual, 'getAlumno') ? $usuarioActual->getAlumno() : null;
+    #[Route('/rutina', name: 'app_rutina', methods: ['GET'])]
+    public function index(Request $request, EntityManagerInterface $em, PaginatorInterface $paginator): Response
+    {
+        $q        = trim((string) $request->query->get('q', ''));
+        $alumnoId = (int) ($request->query->get('alumno_id', 0));
+        $page     = max(1, (int) $request->query->get('page', 1));
+        $perPage  = (int) $request->query->get('per_page', 10);
+        $perPage  = \in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 10;
 
-        if ($alumnoActual) {
-            $qb->andWhere('a = :alumnoActual')->setParameter('alumnoActual', $alumnoActual);
-            // Para que la vista conozca el alumno aplicado (si lo necesitas en inputs hidden, etc.)
-            $alumnoId = $alumnoActual->getId();
-        } else {
-            // Si por cualquier motivo no hay relación Alumno, devolvemos vacío
-            $qb->andWhere('1 = 0');
+        $qb = $em->getRepository(Rutina::class)->createQueryBuilder('r')
+            ->leftJoin('r.alumno', 'a')->addSelect('a')
+            ->leftJoin('a.usuario', 'u')->addSelect('u');
+
+        // Admin y Profesor ven TODO; Alumno solo las suyas
+        $esAdminLike    = $this->isGranted('ROLE_ADMIN') || $this->isGranted('ROLE_ADMINISTRADOR') || $this->isGranted('ROLE_SUPER_ADMIN');
+        $esProfesorLike = $this->isGranted('ROLE_PROFESOR') || $this->isGranted('ROLE_TEACHER');
+
+        if (!$esAdminLike && !$esProfesorLike && $this->isGranted('ROLE_ALUMNO')) {
+            $qb->andWhere('u = :user')->setParameter('user', $this->getUser());
         }
-    } else {
-        // Admin/Profesor: se respeta el filtro por alumno si viene en la query
+
         if ($alumnoId > 0) {
-            $qb->andWhere('a.id = :alumnoId')->setParameter('alumnoId', $alumnoId);
+            $qb->andWhere('a.id = :aid')->setParameter('aid', $alumnoId);
         }
-    }
 
-    // Orden por defecto (sobrescribible por ?sort=&direction=)
-    $qb->addOrderBy('r.id', 'DESC');
+        if ($q !== '') {
+            $qb->andWhere('(r.nombre LIKE :q OR u.nombre LIKE :q OR u.apellido1 LIKE :q OR u.apellido2 LIKE :q)')
+               ->setParameter('q', "%{$q}%");
+        }
 
-    // Paginación
-    $pagination = $paginator->paginate(
-        $qb,
-        $page,
-        $perPage
-    );
+        $sort    = (string) $request->query->get('sort', 'r.nombre');
+        $dir     = strtolower((string) $request->query->get('direction', 'asc')) === 'desc' ? 'desc' : 'asc';
+        $allowed = ['r.nombre', 'u.nombre'];
+        if (!\in_array($sort, $allowed, true)) { $sort = 'r.nombre'; }
 
-    // Selector de alumnos para filtros:
-    // - Para alumnos: no lo necesitamos, lo dejamos vacío
-    // - Para admin/profesor: se carga listado
-    if ($this->isGranted('ROLE_ALUMNO')) {
-        $alumnos = [];
-    } else {
-        $alumnos = $em->getRepository(\App\Entity\Alumno::class)->createQueryBuilder('al')
+        $pagination = $paginator->paginate(
+            $qb,
+            $page,
+            $perPage,
+            [
+                'defaultSortFieldName' => $sort,
+                'defaultSortDirection' => $dir,
+                'wrap-queries' => true,
+            ]
+        );
+
+        $alumnos = $em->getRepository(Alumno::class)->createQueryBuilder('al')
             ->leftJoin('al.usuario', 'uu')->addSelect('uu')
             ->orderBy('uu.nombre', 'ASC')
             ->getQuery()->getResult();
+
+        return $this->render('rutina/index.html.twig', [
+            'titulo'         => 'Listado de rutinas',
+            'rutinas'        => $pagination,
+            'q'              => $q,
+            'alumno_id'      => $alumnoId,
+            'alumnos'        => $alumnos,
+            'per_page'       => $perPage,
+            'perPageOptions' => [10, 25, 50, 100],
+        ]);
     }
 
-    return $this->render('rutina/index.html.twig', [
-        'rutinas'        => $pagination,
-        'titulo'         => 'Listado de rutinas',
-        'per_page'       => $perPage,
-        'perPageOptions' => $perPageOptions,
-        'q'              => $q,
-        'alumno_id'      => $alumnoId,
-        'alumnos'        => $alumnos,
-    ]);
-}
-
-
-    #[Route('/rutina/nueva', name: 'rutina_nueva')]
+    #[Route('/rutina/nueva', name: 'rutina_nueva', methods: ['GET','POST'])]
     public function nueva(Request $request, EntityManagerInterface $em): Response
     {
         $rutina = new Rutina();
@@ -115,8 +98,8 @@ public function index(
             ->add('alumno', EntityType::class, [
                 'class' => Alumno::class,
                 'choice_label' => function (Alumno $alumno) {
-                    $usuario = $alumno->getUsuario();
-                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . ($usuario->getApellido2() ?? '') : 'Sin nombre';
+                    $u = $alumno->getUsuario();
+                    return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '').' '.($u->getApellido2() ?? '')) : 'Sin nombre';
                 },
                 'label' => 'Alumno',
                 'placeholder' => 'Selecciona un alumno',
@@ -143,38 +126,37 @@ public function index(
                 if (!empty($ejData['ejercicio']) && !empty($ejData['repeticiones'])) {
                     $ejercicio = $em->getRepository(Ejercicio::class)->find($ejData['ejercicio']);
                     if ($ejercicio) {
-                        $rutinaEjercicio = new RutinaEjercicios();
-                        $rutinaEjercicio->setEjercicio($ejercicio);
-                        $rutinaEjercicio->setRepeticiones((int) $ejData['repeticiones']);
-                        $rutinaEjercicio->setOrden($orden++);
-                        $ejerciciosRutina[] = $rutinaEjercicio;
+                        $re = new RutinaEjercicios();
+                        $re->setEjercicio($ejercicio);
+                        $re->setRepeticiones((int) $ejData['repeticiones']);
+                        $re->setOrden($orden++);
+                        $ejerciciosRutina[] = $re;
                     }
                 }
             }
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($this->isGranted('ROLE_ALUMNO')) {
-                $usuario = $this->getUser();
-                $alumno  = \method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
-                if ($alumno) {
-                    $rutina->setAlumno($alumno);
-                } else {
-                    $this->addFlash('danger', 'No se encontró la ficha del alumno asociado.');
+            // Sólo si es ALUMNO forzamos su propia ficha; admin/profesor pueden elegir cualquier alumno del combo
+            if ($this->isGranted('ROLE_ALUMNO') && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_PROFESOR')) {
+                $alumnoActual = $this->getAlumnoActual($em);
+                if (!$alumnoActual) {
+                    $this->addFlash('danger', 'No se encontró la ficha del alumno asociada al usuario.');
                     return $this->redirectToRoute('app_rutina');
                 }
+                $rutina->setAlumno($alumnoActual);
             }
+
             $em->persist($rutina);
-            foreach ($ejerciciosRutina as $rutinaEjercicio) {
-                $rutinaEjercicio->setRutina($rutina);
-                $em->persist($rutinaEjercicio);
+            foreach ($ejerciciosRutina as $re) {
+                $re->setRutina($rutina);
+                $em->persist($re);
             }
             $em->flush();
 
             return $this->redirectToRoute('app_rutina');
         }
 
-        // Obtener todos los ejercicios para el desplegable
         $ejercicios = $em->getRepository(Ejercicio::class)->findAll();
 
         return $this->render('rutina/nueva.html.twig', [
@@ -185,11 +167,10 @@ public function index(
         ]);
     }
 
-    #[Route('/rutina/{id}/editar', name: 'rutina_editar')]
+    #[Route('/rutina/{id}/editar', name: 'rutina_editar', requirements: ['id' => '\d+'], methods: ['GET','POST'])]
     public function editar(int $id, Request $request, EntityManagerInterface $em): Response
     {
         $rutina = $em->getRepository(Rutina::class)->find($id);
-
         if (!$rutina) {
             throw $this->createNotFoundException('Rutina no encontrada');
         }
@@ -198,8 +179,8 @@ public function index(
             ->add('alumno', EntityType::class, [
                 'class' => Alumno::class,
                 'choice_label' => function (Alumno $alumno) {
-                    $usuario = $alumno->getUsuario();
-                    return $usuario ? $usuario->getNombre() . ' ' . $usuario->getApellido1() . ' ' . ($usuario->getApellido2() ?? '') : 'Sin nombre';
+                    $u = $alumno->getUsuario();
+                    return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '').' '.($u->getApellido2() ?? '')) : 'Sin nombre';
                 },
                 'label' => 'Alumno',
                 'placeholder' => 'Selecciona un alumno',
@@ -217,7 +198,7 @@ public function index(
 
         $form->handleRequest($request);
 
-        // Procesar ejercicios añadidos manualmente
+        // Carga / procesamiento de ejercicios
         $ejerciciosRutina = [];
         if ($request->isMethod('POST')) {
             $ejerciciosData = $request->request->all('ejercicios');
@@ -226,50 +207,43 @@ public function index(
                 if (!empty($ejData['ejercicio']) && !empty($ejData['repeticiones'])) {
                     $ejercicio = $em->getRepository(Ejercicio::class)->find($ejData['ejercicio']);
                     if ($ejercicio) {
-                        $rutinaEjercicio = new RutinaEjercicios();
-                        $rutinaEjercicio->setEjercicio($ejercicio);
-                        $rutinaEjercicio->setRepeticiones((int) $ejData['repeticiones']);
-                        $rutinaEjercicio->setOrden($orden++);
-                        $ejerciciosRutina[] = $rutinaEjercicio;
+                        $re = new RutinaEjercicios();
+                        $re->setEjercicio($ejercicio);
+                        $re->setRepeticiones((int) $ejData['repeticiones']);
+                        $re->setOrden($orden++);
+                        $ejerciciosRutina[] = $re;
                     }
                 }
             }
         } else {
-            // Cargar ejercicios actuales de la rutina
-            foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
-                $ejerciciosRutina[] = $rutinaEjercicio;
+            foreach ($rutina->getRutinaEjercicios() as $re) {
+                $ejerciciosRutina[] = $re;
             }
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-             if ($this->isGranted('ROLE_ALUMNO')) {
-        $usuario = $this->getUser();
-        $alumno  = \method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
+            // Si es ALUMNO, sólo puede editar sus propias rutinas y se fuerza su alumno
+            if ($this->isGranted('ROLE_ALUMNO') && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_PROFESOR')) {
+                $alumnoActual = $this->getAlumnoActual($em);
+                if (!$alumnoActual) {
+                    $this->addFlash('danger', 'No se encontró la ficha del alumno asociada al usuario.');
+                    return $this->redirectToRoute('app_rutina');
+                }
+                if ($rutina->getAlumno() && $rutina->getAlumno()->getId() !== $alumnoActual->getId()) {
+                    throw $this->createAccessDeniedException('No puedes editar una rutina de otro alumno.');
+                }
+                $rutina->setAlumno($alumnoActual);
+            }
 
-        if (!$alumno) {
-            $this->addFlash('danger', 'No se encontró la ficha del alumno asociada al usuario.');
-            return $this->redirectToRoute('app_rutina');
-        }
-
-        // Impedir que un alumno edite rutinas de otro alumno
-        if ($rutina->getAlumno() && $rutina->getAlumno()->getId() !== $alumno->getId()) {
-            throw $this->createAccessDeniedException('No puedes editar una rutina de otro alumno.');
-        }
-
-        // Forzar que el alumno de la rutina sea el alumno logueado,
-        // ignorando cualquier valor que haya podido llegar del form.
-        $rutina->setAlumno($alumno);
-    }
-            // Eliminar ejercicios anteriores
-            foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
-                $em->remove($rutinaEjercicio);
+            // Reemplazar ejercicios (simple)
+            foreach ($rutina->getRutinaEjercicios() as $re) {
+                $em->remove($re);
             }
             $em->flush();
 
-            // Añadir los nuevos ejercicios
-            foreach ($ejerciciosRutina as $rutinaEjercicio) {
-                $rutinaEjercicio->setRutina($rutina);
-                $em->persist($rutinaEjercicio);
+            foreach ($ejerciciosRutina as $re) {
+                $re->setRutina($rutina);
+                $em->persist($re);
             }
             $em->flush();
 
@@ -286,16 +260,14 @@ public function index(
         ]);
     }
 
-    #[Route('/rutina/{id}', name: 'rutina_visualizar')]
+    #[Route('/rutina/{id}', name: 'rutina_visualizar', requirements: ['id' => '\d+'], methods: ['GET'])]
     public function visualizar(int $id, EntityManagerInterface $em): Response
     {
         $rutina = $em->getRepository(Rutina::class)->find($id);
-
         if (!$rutina) {
             throw $this->createNotFoundException('Rutina no encontrada');
         }
 
-        // Obtener ejercicios ordenados
         $ejerciciosRutina = $rutina->getRutinaEjercicios()->toArray();
         usort($ejerciciosRutina, fn($a, $b) => $a->getOrden() <=> $b->getOrden());
 
@@ -306,20 +278,24 @@ public function index(
         ]);
     }
 
-    #[Route('/rutina/{id}/eliminar', name: 'rutina_eliminar', methods: ['POST'])]
-    public function eliminar(int $id, EntityManagerInterface $em): Response
+    #[Route('/rutina/{id}/eliminar', name: 'rutina_eliminar', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function eliminar(Request $request, int $id, EntityManagerInterface $em): Response
     {
         $rutina = $em->getRepository(Rutina::class)->find($id);
-
         if (!$rutina) {
             throw $this->createNotFoundException('Rutina no encontrada');
         }
 
-        // Eliminar los registros asociados en RutinaEjercicios
-        foreach ($rutina->getRutinaEjercicios() as $rutinaEjercicio) {
-            $em->remove($rutinaEjercicio);
+        // (Opcional) CSRF
+        $token = $request->request->get('_token');
+        if ($token !== null && !$this->isCsrfTokenValid('eliminar_rutina_'.$rutina->getId(), $token)) {
+            $this->addFlash('danger', 'Token CSRF inválido.');
+            return $this->redirectToRoute('app_rutina');
         }
 
+        foreach ($rutina->getRutinaEjercicios() as $re) {
+            $em->remove($re);
+        }
         $em->remove($rutina);
         $em->flush();
 
