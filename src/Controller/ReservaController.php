@@ -135,8 +135,7 @@ class ReservaController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-
-            // Alumno: siempre su propia ficha, ignorar cualquier otro alumno
+            // Determinar el alumno
             if ($this->isGranted('ROLE_ALUMNO') && !$this->isGranted('ROLE_ADMIN') && !$this->isGranted('ROLE_PROFESOR')) {
                 $usuario = $this->getUser();
                 $alumno  = method_exists($usuario, 'getAlumno') ? $usuario->getAlumno() : null;
@@ -146,9 +145,31 @@ class ReservaController extends AbstractController
                     return $this->redirectToRoute('app_reserva');
                 }
                 $reserva->setAlumno($alumno);
+            } else {
+                $alumno = $reserva->getAlumno();
             }
 
-            // Aquí puedes validar plazas disponibles, duplicados, etc.
+            $clase = $reserva->getClase();
+
+            // Comprobar si ya existe una reserva para ese alumno y clase
+            $duplicada = $em->getRepository(Reserva::class)->findOneBy([
+                'alumno' => $alumno,
+                'clase'  => $clase,
+            ]);
+            if ($duplicada) {
+                $this->addFlash('danger', 'El alumno ya está apuntado a esa clase.');
+                return $this->redirectToRoute('app_reserva');
+            }
+
+            // Comprobar si la clase está completa
+            $limite   = (int) ($clase->getLimite() ?? 0);
+            $enrolled = $clase->getReservas()->count();
+            if ($limite > 0 && $enrolled >= $limite) {
+                $this->addFlash('danger', 'No se pudo hacer la reserva: la clase está completa.');
+                return $this->redirectToRoute('app_reserva');
+            }
+
+            // Guardar reserva
             $reserva->setFecha(new \DateTime());
             $em->persist($reserva);
             $em->flush();
