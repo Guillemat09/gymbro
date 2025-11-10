@@ -96,7 +96,7 @@ final class ClaseController extends AbstractController
     {
         $clase = new Clase();
 
-        $esProfesor = $this->isGranted('ROLE_PROFESOR');
+        $esProfesor = $this->isGranted('ROLE_PROFESOR')  && !$this->isGranted('ROLE_ADMIN') ;
         // Garantiza que exista Profesor si eres ROLE_PROFESOR (y lo crea con defaults)
         $profesorActual = $this->ensureProfesorActual($em);
 
@@ -136,8 +136,18 @@ final class ClaseController extends AbstractController
             ]);
 
         if ($this->isGranted('ROLE_ADMIN')) {
+            // Solo profesores con usuario asociado
+            $profesoresValidos = $em->getRepository(Profesor::class)
+                ->createQueryBuilder('p')
+                ->leftJoin('p.usuario', 'u')
+                ->addSelect('u')
+                ->where('u.id IS NOT NULL')
+                ->getQuery()
+                ->getResult();
+
             $builder->add('profesor', EntityType::class, [
                 'class' => Profesor::class,
+                'choices' => $profesoresValidos,
                 'choice_label' => function (Profesor $profesor) {
                     $u = $profesor->getUsuario();
                     return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '')) : 'Sin nombre';
@@ -148,25 +158,21 @@ final class ClaseController extends AbstractController
                 'required' => true,
             ]);
         } else {
-            // Incluir como choices el suyo y (por robustez) el que pudiera venir precargado
+            // Si es profesor, solo puede verse a sí mismo
             $choices = [];
             if ($profesorActual) { $choices[] = $profesorActual; }
-            if ($clase->getProfesor() && (!$profesorActual || $clase->getProfesor()->getId() !== $profesorActual->getId())) {
-                $choices[] = $clase->getProfesor();
-            }
-
             $builder->add('profesor', EntityType::class, [
                 'class' => Profesor::class,
                 'choices' => $choices,
-                'data' => $profesorActual ?: $clase->getProfesor(),
+                'data' => $profesorActual,
                 'choice_label' => function (Profesor $profesor) {
                     $u = $profesor->getUsuario();
                     return $u ? trim(($u->getNombre() ?? '').' '.($u->getApellido1() ?? '')) : 'Sin nombre';
                 },
                 'label' => 'Profesor',
-                'placeholder' => $profesorActual ? false : 'Sin profesor asociado',
+                'placeholder' => false,
                 'attr' => ['class' => 'form-select'],
-                'required' => false,
+                'required' => true,
             ]);
         }
 
@@ -188,6 +194,7 @@ final class ClaseController extends AbstractController
                 $profesorActual = $this->ensureProfesorActual($em);
                 $clase->setProfesor($profesorActual);
             }
+            // Si es admin, se respeta el profesor elegido en el formulario
 
             $em->persist($clase);
             $em->flush();
@@ -300,8 +307,8 @@ final class ClaseController extends AbstractController
         }
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($esProfesor) {
-                // Reasegurar y fijar propietario
+            if ($esProfesor && !$this->isGranted('ROLE_ADMIN')) {
+                // Solo si es profesor y NO admin, fuerza su propio profesor
                 $profesorActual = $this->ensureProfesorActual($em);
                 $clase->setProfesor($profesorActual);
             }
@@ -311,6 +318,7 @@ final class ClaseController extends AbstractController
             return $this->redirectToRoute('app_clase');
         }
 
+        // El mensaje flash solo debe estar dentro del bloque de submit+validación
         return $this->render('clase/editar.html.twig', [
             'form' => $form->createView(),
             'titulo' => 'Editar clase',

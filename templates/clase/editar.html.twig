@@ -16,7 +16,6 @@
     <div class="card p-4">
         {{ form_start(form) }}
 
-            {# Errores de formulario a nivel global #}
             {{ form_errors(form) }}
 
             {{ form_row(form.nombre) }}
@@ -30,9 +29,7 @@
             {% if is_granted('ROLE_ADMIN') %}
                 {{ form_row(form.profesor) }}
             {% elseif is_granted('ROLE_PROFESOR') %}
-                {# Marcamos el campo como renderizado para que no lo pinte Symfony automáticamente #}
                 {% do form.profesor.setRendered %}
-
                 <div class="mb-3">
                     <label class="form-label">Profesor</label>
                     <div class="form-control-plaintext">
@@ -43,8 +40,6 @@
                         {% endif %}
                     </div>
                 </div>
-
-                {# Enviamos el ID del profesor como hidden para que pase la validación del EntityType #}
                 <input
                     type="hidden"
                     name="{{ form.profesor.vars.full_name }}"
@@ -57,7 +52,6 @@
 
             {{ form_row(form.guardar) }}
 
-            {# Al usar render_rest: false, renderizamos manualmente el token CSRF si existe #}
             {% if form._token is defined %}
                 {{ form_row(form._token) }}
             {% endif %}
