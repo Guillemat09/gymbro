@@ -6,33 +6,41 @@
 {% block body %}
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="h3 m-0">Reservas</h1>
-
- <div class="btn-group">
-  <button type="button"
-          class="btn btn-primary dropdown-toggle"
-          data-bs-toggle="dropdown"
-          aria-expanded="false">
-    <i class="bi bi-plus-lg me-1"></i> Nueva reserva
-  </button>
-
-  <ul class="dropdown-menu dropdown-menu-end">
-    <li>
-      <a class="dropdown-item" href="{{ path('reserva_nueva') }}">
-        <i class="bi bi-ui-checks-grid me-2"></i> Formulario
-      </a>
-    </li>
-    <li>
-      <a class="dropdown-item" href="{{ path('reserva_calendario') }}">
-        <i class="bi bi-calendar3 me-2"></i> Calendario
-      </a>
-    </li>
-  </ul>
+  <div class="btn-group">
+    <button type="button"
+            class="btn btn-primary dropdown-toggle"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+      <i class="bi bi-plus-lg me-1"></i> Nueva reserva
+    </button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      <li>
+        <a class="dropdown-item" href="{{ path('reserva_nueva') }}">
+          <i class="bi bi-ui-checks-grid me-2"></i> Formulario
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item" href="{{ path('reserva_calendario') }}">
+          <i class="bi bi-calendar3 me-2"></i> Calendario
+        </a>
+      </li>
+    </ul>
+  </div>
 </div>
 
-</div>
+{# Persistencia de query para paginación #}
+{% set persistedQuery = {} %}
+{% for k, v in app.request.query.all %}
+    {% if k != 'page' and v is not iterable %}
+        {% set persistedQuery = persistedQuery|merge({ (k): v }) %}
+    {% endif %}
+{% endfor %}
+{% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
 
 {# BUSCADOR SENCILLO (GET ?q=) #}
 <form method="get" class="row g-2 mb-3">
+  <input type="hidden" name="per_page" value="{{ per_page }}">
+  <input type="hidden" name="page" value="1">
   <div class="col-sm-8 col-md-6">
     <input type="search"
            class="form-control"
@@ -48,6 +56,31 @@
     </button>
   </div>
 </form>
+
+<div class="row g-2 align-items-end mb-3">
+    <div class="col-12 col-lg-4 d-flex align-items-center ms-auto">
+        <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
+            {% for k, v in app.request.query.all %}
+                {% if k not in ['per_page', 'page'] %}
+                    {% if v is iterable %}
+                        {% for vv in v %}
+                            <input type="hidden" name="{{ k }}[]" value="{{ vv }}">
+                        {% endfor %}
+                    {% else %}
+                        <input type="hidden" name="{{ k }}" value="{{ v }}">
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
+            <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
+                {% for opt in [10, 25, 50, 100] %}
+                    <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+            <span class="text-muted">/ pág.</span>
+        </form>
+    </div>
+</div>
 
 {# MENSAJES FLASH #}
 {% for label, messages in app.flashes %}
@@ -66,15 +99,12 @@
         <th>
           {{ knp_pagination_sortable(reservas, 'ID', 'r.id')|raw }}
         </th>
-
-        {# La columna "Alumno" no se muestra a los alumnos #}
         {% set esAlumnoSolo = is_granted('ROLE_ALUMNO') and not is_granted('ROLE_ADMIN') and not is_granted('ROLE_PROFESOR') %}
         {% if not esAlumnoSolo %}
           <th>
             {{ knp_pagination_sortable(reservas, 'Alumno', 'au.nombre')|raw }}
           </th>
         {% endif %}
-
         <th>
           {{ knp_pagination_sortable(reservas, 'Fecha de reserva', 'r.fecha')|raw }}
         </th>
@@ -90,12 +120,10 @@
         <th class="text-center">Opciones</th>
       </tr>
     </thead>
-
     <tbody>
     {% for reserva in reservas %}
       <tr>
         <td>{{ reserva.id }}</td>
-
         {% if not esAlumnoSolo %}
           <td>
             {% if reserva.alumno and reserva.alumno.usuario %}
@@ -105,7 +133,6 @@
             {% endif %}
           </td>
         {% endif %}
-
         <td>{{ reserva.fecha ? reserva.fecha|date('d/m/Y') : '-' }}</td>
         <td>{{ reserva.clase ? reserva.clase.nombre : '-' }}</td>
         <td>{{ reserva.clase and reserva.clase.fecha ? reserva.clase.fecha|date('d/m/Y') : '-' }}</td>
@@ -116,13 +143,11 @@
             -
           {% endif %}
         </td>
-
         <td class="text-center">
           <a href="{{ path('reserva_visualizar', {'id': reserva.id}) }}"
              class="btn btn-outline-primary btn-sm me-1" title="Ver">
             <i class="bi bi-eye"></i>
           </a>
-
           <button type="button"
                   class="btn btn-outline-danger btn-sm"
                   data-bs-toggle="modal"
@@ -130,8 +155,6 @@
                   title="Eliminar">
             <i class="bi bi-trash"></i>
           </button>
-
-          {# Modal Bootstrap para confirmación de borrado #}
           <div class="modal fade" id="modalEliminarReserva{{ reserva.id }}" tabindex="-1" aria-labelledby="modalLabelEliminarReserva{{ reserva.id }}" aria-hidden="true">
               <div class="modal-dialog">
                   <div class="modal-content">
@@ -160,7 +183,6 @@
       </tr>
     {% else %}
       <tr>
-        {# colspan: si se oculta la columna de Alumno, la tabla tiene una columna menos #}
         <td colspan="{{ esAlumnoSolo ? 6 : 7 }}" class="text-center text-muted">
           No hay reservas registradas.
         </td>
@@ -170,12 +192,54 @@
   </table>
 </div>
 
-<div class="d-flex justify-content-between align-items-center">
-  <div class="small text-muted">
-    Mostrando {{ reservas|length }} de {{ reservas.getTotalItemCount }} resultados
-  </div>
-  <div>
-    {{ knp_pagination_render(reservas) }}
-  </div>
+{# ====== Resumen + paginación inferior ====== #}
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <div>
+        Mostrando
+        {{ ((reservas.currentPageNumber - 1) * reservas.itemNumberPerPage) + 1 }}
+        -
+        {{ reservas.currentPageNumber * reservas.itemNumberPerPage > reservas.totalItemCount
+            ? reservas.totalItemCount
+            : reservas.currentPageNumber * reservas.itemNumberPerPage }}
+        de {{ reservas.totalItemCount }} reservas
+    </div>
+    <div>
+        {% set page = reservas.currentPageNumber %}
+        {% set last = reservas.pageCount %}
+        {% set start = page - 2 > 0 ? page - 2 : 1 %}
+        {% set end = page + 2 <= last ? page + 2 : last %}
+        <nav aria-label="Paginación inferior">
+            <ul class="pagination pagination-sm mb-0 justify-content-end">
+                <li class="page-item {{ page == 1 ? 'disabled' }}">
+                    <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': 1})) }}" aria-label="Primera">««</a>
+                </li>
+                <li class="page-item {{ page == 1 ? 'disabled' }}">
+                    <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">Anterior</a>
+                </li>
+                {% for i in start..end %}
+                    <li class="page-item {{ i == page ? 'active' : '' }}">
+                        <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                <li class="page-item {{ page == last ? 'disabled' }}">
+                    <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">Siguiente</a>
+                </li>
+                <li class="page-item {{ page == last ? 'disabled' }}">
+                    <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': last})) }}" aria-label="Última">»»</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 </div>
+
+<script>
+    document.getElementById('per_page')?.addEventListener('change', function() {
+        const form = document.getElementById('per-page-form');
+        if (!form) return;
+        const params = new URLSearchParams(new FormData(form));
+        params.delete('page');
+        const url = window.location.pathname + '?' + params.toString();
+        window.location.href = url;
+    });
+</script>
 {% endblock %}

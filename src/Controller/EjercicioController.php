@@ -11,17 +11,41 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Knp\Component\Pager\PaginatorInterface;
 
 final class EjercicioController extends AbstractController
 {
     #[Route('/ejercicio', name: 'app_ejercicio')]
-    public function index(EntityManagerInterface $em): Response
+    public function index(EntityManagerInterface $em, Request $request, PaginatorInterface $paginator): Response
     {
-        $ejercicios = $em->getRepository(Ejercicio::class)->findAll();
+        $perPageOptions = [10, 25, 50, 100];
+        $perPage = (int) $request->query->get('per_page', 10);
+        if (!in_array($perPage, $perPageOptions, true)) {
+            $perPage = 10;
+        }
+        $page = max(1, $request->query->getInt('page', 1));
+
+        $q = trim((string) $request->query->get('q', ''));
+
+        $qb = $em->getRepository(Ejercicio::class)->createQueryBuilder('e');
+        if ($q !== '') {
+            $qb->andWhere('LOWER(e.nombre) LIKE :q OR LOWER(e.descripcion) LIKE :q OR LOWER(e.musculoPrincipal) LIKE :q')
+               ->setParameter('q', '%'.mb_strtolower($q).'%');
+        }
+        $qb->orderBy('e.id', 'ASC');
+
+        $pagination = $paginator->paginate(
+            $qb,
+            $page,
+            $perPage
+        );
 
         return $this->render('ejercicio/index.html.twig', [
-            'ejercicios' => $ejercicios,
-            'titulo' => 'Lista de Ejercicios',
+            'ejercicios'      => $pagination,
+            'titulo'          => 'Lista de Ejercicios',
+            'per_page'        => $perPage,
+            'perPageOptions'  => $perPageOptions,
+            'q'               => $q,
         ]);
     }
 

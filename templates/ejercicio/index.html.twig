@@ -12,6 +12,57 @@
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
     <a href="{{ path('ejercicio_nuevo') }}" class="btn btn-success mb-3">Nuevo ejercicio</a>
 
+    {% set persistedQuery = {} %}
+    {% for k, v in app.request.query.all %}
+        {% if k != 'page' and v is not iterable %}
+            {% set persistedQuery = persistedQuery|merge({ (k): v }) %}
+        {% endif %}
+    {% endfor %}
+    {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
+
+    <div class="row g-2 align-items-end mb-3">
+        <div class="col-12 col-lg-8">
+            <form method="get" id="filter-form" class="row g-2">
+                <input type="hidden" name="per_page" value="{{ per_page }}">
+                <input type="hidden" name="page" value="1">
+                <div class="col-sm-6 col-md-5">
+                    <label for="q" class="form-label mb-0">Buscar</label>
+                    <input type="text" class="form-control" id="q" name="q" value="{{ q }}" placeholder="nombre, descripción o músculo">
+                </div>
+                <div class="col-sm-6 col-md-3 d-grid">
+                    <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>
+                </div>
+                <div class="col-sm-6 col-md-3 d-grid">
+                    {% if q %}
+                        <a class="btn btn-outline-secondary btn-lg w-100" href="{{ path('app_ejercicio') }}">Quitar filtrado</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        <div class="col-12 col-lg-4 d-flex align-items-center">
+            <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
+                {% for k, v in app.request.query.all %}
+                    {% if k not in ['per_page', 'page'] %}
+                        {% if v is iterable %}
+                            {% for vv in v %}
+                                <input type="hidden" name="{{ k }}[]" value="{{ vv }}">
+                            {% endfor %}
+                        {% else %}
+                            <input type="hidden" name="{{ k }}" value="{{ v }}">
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
+                <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
+                    {% for opt in perPageOptions %}
+                        <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }}</option>
+                    {% endfor %}
+                </select>
+                <span class="text-muted">/ pág.</span>
+            </form>
+        </div>
+    </div>
+
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
             <tr>
@@ -40,13 +91,10 @@
                         <a href="{{ path('ejercicio_editar', {'id': ejercicio.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <!-- Botón para mostrar el modal de eliminación -->
                         <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
                                 data-bs-toggle="modal" data-bs-target="#modalEliminarEjercicio{{ ejercicio.id }}">
                             <i class="bi bi-trash"></i>
                         </button>
-
-                        <!-- Modal Bootstrap de confirmación -->
                         <div class="modal fade" id="modalEliminarEjercicio{{ ejercicio.id }}" tabindex="-1" aria-labelledby="modalLabelEjercicio{{ ejercicio.id }}" aria-hidden="true">
                           <div class="modal-dialog">
                             <div class="modal-content">
@@ -81,4 +129,54 @@
             {% endfor %}
         </tbody>
     </table>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            Mostrando
+            {{ ((ejercicios.currentPageNumber - 1) * ejercicios.itemNumberPerPage) + 1 }}
+            -
+            {{ ejercicios.currentPageNumber * ejercicios.itemNumberPerPage > ejercicios.totalItemCount
+                ? ejercicios.totalItemCount
+                : ejercicios.currentPageNumber * ejercicios.itemNumberPerPage }}
+            de {{ ejercicios.totalItemCount }} ejercicios
+        </div>
+        <div>
+            {% set page = ejercicios.currentPageNumber %}
+            {% set last = ejercicios.pageCount %}
+            {% set start = page - 2 > 0 ? page - 2 : 1 %}
+            {% set end = page + 2 <= last ? page + 2 : last %}
+            <nav aria-label="Paginación inferior">
+                <ul class="pagination pagination-sm mb-0 justify-content-end">
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': 1})) }}" aria-label="Primera">««</a>
+                    </li>
+                    <li class="page-item {{ page == 1 ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page - 1})) }}" aria-label="Anterior">Anterior</a>
+                    </li>
+                    {% for i in start..end %}
+                        <li class="page-item {{ i == page ? 'active' : '' }}">
+                            <a class="page-link" href="{{ i == page ? '#' : path(app.request.attributes.get('_route'), persistedQuery|merge({'page': i})) }}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': page + 1})) }}" aria-label="Siguiente">Siguiente</a>
+                    </li>
+                    <li class="page-item {{ page == last ? 'disabled' }}">
+                        <a class="page-link" href="{{ path(app.request.attributes.get('_route'), persistedQuery|merge({'page': last})) }}" aria-label="Última">»»</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('per_page')?.addEventListener('change', function() {
+            const form = document.getElementById('per-page-form');
+            if (!form) return;
+            const params = new URLSearchParams(new FormData(form));
+            params.delete('page');
+            const url = window.location.pathname + '?' + params.toString();
+            window.location.href = url;
+        });
+    </script>
 {% endblock %}
