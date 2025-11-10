@@ -154,6 +154,8 @@ final class RutinaController extends AbstractController
             }
             $em->flush();
 
+            $this->addFlash('success', 'Rutina creada correctamente.');
+
             return $this->redirectToRoute('app_rutina');
         }
 
@@ -247,6 +249,8 @@ final class RutinaController extends AbstractController
             }
             $em->flush();
 
+            $this->addFlash('success', 'Rutina modificada correctamente.');
+
             return $this->redirectToRoute('app_rutina');
         }
 
@@ -298,6 +302,7 @@ final class RutinaController extends AbstractController
         }
         $em->remove($rutina);
         $em->flush();
+        $this->addFlash('success', 'Rutina eliminada correctamente.');
 
         return $this->redirectToRoute('app_rutina');
     }

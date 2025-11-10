@@ -62,6 +62,7 @@ final class EjercicioController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $em->persist($ejercicio);
             $em->flush();
+            $this->addFlash('success', 'Ejercicio creado correctamente.');
 
             return $this->redirectToRoute('app_ejercicio');
         }
@@ -112,6 +113,8 @@ final class EjercicioController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $em->flush();
+            $this->addFlash('success', 'Ejercicio modificado correctamente.');
+
             return $this->redirectToRoute('app_ejercicio');
         }
 
@@ -147,6 +150,7 @@ final class EjercicioController extends AbstractController
 
         $em->remove($ejercicio);
         $em->flush();
+        $this->addFlash('success', 'Ejercicio eliminado correctamente.');
 
         return $this->redirectToRoute('app_ejercicio');
     }

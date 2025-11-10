@@ -3,6 +3,12 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block body %}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="alert alert-{{ label }} mt-2">{{ message|raw }}</div>
+        {% endfor %}
+    {% endfor %}
+
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
     <a href="{{ path('ejercicio_nuevo') }}" class="btn btn-success mb-3">Nuevo ejercicio</a>
 
