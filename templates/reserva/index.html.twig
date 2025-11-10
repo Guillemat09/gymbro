@@ -123,15 +123,39 @@
             <i class="bi bi-eye"></i>
           </a>
 
-          {# Para eliminar, form con token CSRF #}
-          <form action="{{ path('reserva_eliminar', {'id': reserva.id}) }}"
-                method="post" class="d-inline"
-                onsubmit="return confirm('¿Eliminar esta reserva?');">
-            <input type="hidden" name="_token" value="{{ csrf_token('eliminar_reserva_' ~ reserva.id) }}">
-            <button type="submit" class="btn btn-outline-danger btn-sm" title="Eliminar">
-              <i class="bi bi-trash"></i>
-            </button>
-          </form>
+          <button type="button"
+                  class="btn btn-outline-danger btn-sm"
+                  data-bs-toggle="modal"
+                  data-bs-target="#modalEliminarReserva{{ reserva.id }}"
+                  title="Eliminar">
+            <i class="bi bi-trash"></i>
+          </button>
+
+          {# Modal Bootstrap para confirmación de borrado #}
+          <div class="modal fade" id="modalEliminarReserva{{ reserva.id }}" tabindex="-1" aria-labelledby="modalLabelEliminarReserva{{ reserva.id }}" aria-hidden="true">
+              <div class="modal-dialog">
+                  <div class="modal-content">
+                      <form method="post" action="{{ path('reserva_eliminar', {'id': reserva.id}) }}">
+                          <input type="hidden" name="_token" value="{{ csrf_token('eliminar_reserva_' ~ reserva.id) }}">
+                          <div class="modal-header">
+                              <h5 class="modal-title" id="modalLabelEliminarReserva{{ reserva.id }}">¿Eliminar reserva?</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                          </div>
+                          <div class="modal-body">
+                              ¿Seguro que quieres eliminar la reserva <strong>ID {{ reserva.id }}</strong>
+                              {% if reserva.clase %}
+                                  de la clase <strong>{{ reserva.clase.nombre }}</strong>
+                              {% endif %}
+                              ?
+                          </div>
+                          <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="submit" class="btn btn-danger">Eliminar</button>
+                          </div>
+                      </form>
+                  </div>
+              </div>
+          </div>
         </td>
       </tr>
     {% else %}
