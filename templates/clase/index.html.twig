@@ -43,13 +43,27 @@
                     </td>
                     <td class="text-center">
                         <a href="{{ path('clase_visualizar', {'id': clase.id}) }}" class="btn btn-outline-primary btn-sm" title="Visualizar"><i class="bi bi-eye"></i></a>
-                        <a href="{{ path('clase_editar', {'id': clase.id}) }}" class="btn btn-outline-warning btn-sm ms-1" title="Editar"><i class="bi bi-pencil"></i></a>
-                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Eliminar"
-                            data-bs-toggle="modal" data-bs-target="#modalEliminarClase{{ clase.id }}">
+
+                        {% set puedeEditar = is_granted('ROLE_ADMIN') 
+                            or (is_granted('ROLE_PROFESOR') and not is_granted('ROLE_ALUMNO') and clase.profesor and clase.profesor.usuario and clase.profesor.usuario.id == app.user.id) %}
+
+                        <a href="{{ path('clase_editar', {'id': clase.id}) }}"
+                           class="btn btn-outline-warning btn-sm ms-1 {% if not puedeEditar %}disabled{% endif %}"
+                           title="Editar"
+                           {% if not puedeEditar %}tabindex="-1" aria-disabled="true"{% endif %}>
+                            <i class="bi bi-pencil"></i>
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm ms-1 {% if not puedeEditar %}disabled{% endif %}"
+                                title="Eliminar"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalEliminarClase{{ clase.id }}"
+                                {% if not puedeEditar %}tabindex="-1" aria-disabled="true" disabled{% endif %}>
                             <i class="bi bi-trash"></i>
                         </button>
 
-                        {# Modal de confirmación #}
+                        {# Modal de confirmación solo funcional si puedeEditar #}
                         <div class="modal fade" id="modalEliminarClase{{ clase.id }}" tabindex="-1" aria-labelledby="modalLabelEliminarClase{{ clase.id }}" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -63,7 +77,7 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <button type="submit" class="btn btn-danger">Eliminar</button>
+                                            <button type="submit" class="btn btn-danger" {% if not puedeEditar %}disabled{% endif %}>Eliminar</button>
                                         </div>
                                     </form>
                                 </div>
