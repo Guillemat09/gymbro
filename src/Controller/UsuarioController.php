@@ -235,11 +235,14 @@ class UsuarioController extends AbstractController
                 'required' => false,
                 'attr' => ['class' => 'form-control'],
             ])
-            ->add('password', PasswordType::class, [
-                'label' => 'Contraseña',
-                'required' => false,
-                'attr' => ['class' => 'form-control'],
-            ])
+           ->add('password', PasswordType::class, [
+    'label' => 'Contraseña',
+    'required' => false,
+    'mapped' => false,          // <-- evita que se sobrescriba directamente en el entity
+    'empty_data' => '',         // <-- evita que Symfony meta null si no hay input
+    'attr' => ['class' => 'form-control', 'autocomplete' => 'new-password'],
+])
+
             ->add('guardar', SubmitType::class, [
                 'label' => 'Guardar cambios',
                 'attr' => ['class' => 'btn btn-primary mt-3'],
@@ -268,6 +271,9 @@ class UsuarioController extends AbstractController
             }
 
             if ($form->isValid() && !$errores) {
+                if (!empty($password)) {
+        $usuario->setPassword($password);  // <-- No se hashea
+    }
                 // Actualiza los datos adicionales según el tipo
                 if ($usuario->getTipo() === 'alumno' && $usuario->getAlumno()) {
                     $alumno = $usuario->getAlumno();
