@@ -8,8 +8,21 @@
         {{ form_start(form) }}
             {{ form_row(form.email) }}
             {{ form_row(form.nombre) }}
+            {% if errores.nombre is defined %}
+                <div class="text-danger small">{{ errores.nombre }}</div>
+            {% endif %}
             {{ form_row(form.apellido1) }}
+            {% if errores.apellido1 is defined %}
+                <div class="text-danger small">{{ errores.apellido1 }}</div>
+            {% endif %}
             {{ form_row(form.apellido2) }}
+            {% if errores.apellido2 is defined %}
+                <div class="text-danger small">{{ errores.apellido2 }}</div>
+            {% endif %}
+            {{ form_row(form.password) }}
+            {% if errores.password is defined %}
+                <div class="text-danger small">{{ errores.password }}</div>
+            {% endif %}
 
             {% if usuario.tipo == 'alumno' and usuario.alumno %}
                 <hr>
@@ -53,6 +66,16 @@
                         {% if usuario.administrador.activo %}checked{% endif %}>
                     <label class="form-check-label" for="activo">Administrador activo</label>
                 </div>
+            {% endif %}
+
+            {% if errores.alumno is defined %}
+                <div class="text-danger small">{{ errores.alumno }}</div>
+            {% endif %}
+            {% if errores.profesor is defined %}
+                <div class="text-danger small">{{ errores.profesor }}</div>
+            {% endif %}
+            {% if errores.tipo is defined %}
+                <div class="text-danger small">{{ errores.tipo }}</div>
             {% endif %}
 
             {{ form_row(form.guardar) }}

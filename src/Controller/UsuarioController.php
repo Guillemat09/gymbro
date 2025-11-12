@@ -70,6 +70,7 @@ class UsuarioController extends AbstractController
     public function nuevo(Request $request, EntityManagerInterface $em): Response
     {
         $usuario = new Usuario();
+        $errores = [];
 
         $form = $this->createFormBuilder($usuario)
             ->add('email', EmailType::class, [
@@ -113,59 +114,81 @@ class UsuarioController extends AbstractController
 
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted()) {
+            $nombre = $form->get('nombre')->getData();
+            $apellido1 = $form->get('apellido1')->getData();
+            $apellido2 = $form->get('apellido2')->getData();
+            $password = $form->get('password')->getData();
             $tipo = $form->get('tipo')->getData();
 
-            $em->persist($usuario);
-            $em->flush();
+            if (mb_strlen(trim($nombre)) < 3) {
+                $errores['nombre'] = 'El nombre debe tener al menos 3 caracteres.';
+            }
+            if (mb_strlen(trim($apellido1)) < 3) {
+                $errores['apellido1'] = 'El primer apellido debe tener al menos 3 caracteres.';
+            }
+            if ($apellido2 !== null && $apellido2 !== '' && mb_strlen(trim($apellido2)) < 3) {
+                $errores['apellido2'] = 'El segundo apellido debe tener al menos 3 caracteres si se indica.';
+            }
+            if (mb_strlen(trim($password)) < 4) {
+                $errores['password'] = 'La contraseña debe tener al menos 4 caracteres.';
+            }
 
+            // Validación de asociación obligatoria según tipo
             if ($tipo === 'alumno') {
                 $fechaNacimiento = $request->request->get('fechaNacimiento');
                 $peso = $request->request->get('peso');
                 $altura = $request->request->get('altura');
                 $sexo = $request->request->get('sexo');
-
-                if (!$fechaNacimiento || !$peso || !$altura || !$sexo) {
-                    $this->addFlash('error', 'Todos los campos de alumno son obligatorios.');
-                    return $this->redirectToRoute('usuario_nuevo');
+                if (!$fechaNacimiento || !$peso || !$altura) {
+                    $errores['alumno'] = 'Debes introducir fecha de nacimiento, peso y altura para un alumno.';
                 }
-
-                $alumno = new Alumno();
-                $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
-                $alumno->setPeso((int)$peso);
-                $alumno->setAltura((int)$altura);
-                $alumno->setSexo($sexo);
-                $alumno->setUsuario($usuario);
-
-                $em->persist($alumno);
             } elseif ($tipo === 'profesor') {
                 $especialidad = $request->request->get('especialidad');
                 if (!$especialidad) {
-                    $this->addFlash('error', 'La especialidad es obligatoria para el profesor.');
-                    return $this->redirectToRoute('usuario_nuevo');
+                    $errores['profesor'] = 'Debes introducir la especialidad para un profesor.';
                 }
-                $profesor = new Profesor();
-                $profesor->setEspecialidad($especialidad);
-                $profesor->setUsuario($usuario);
-
-                $em->persist($profesor);
             } elseif ($tipo === 'administrador') {
-                $activo = $request->request->get('activo') === 'on' ? true : false;
-                $admin = new Administrador();
-                $admin->setActivo($activo);
-                $admin->setUsuario($usuario);
-
-                $em->persist($admin);
+                // No hay campos extra obligatorios, pero se debe crear el registro admin
+                // (el checkbox activo puede ser opcional)
+            } else {
+                $errores['tipo'] = 'Debes seleccionar un tipo de usuario válido.';
             }
 
-            $em->flush();
+            if ($form->isValid() && !$errores) {
+                $em->persist($usuario);
+                $em->flush();
 
-            return $this->redirectToRoute('app_usuario');
+                if ($tipo === 'alumno') {
+                    $alumno = new Alumno();
+                    $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
+                    $alumno->setPeso((int)$peso);
+                    $alumno->setAltura((int)$altura);
+                    $alumno->setSexo($sexo);
+                    $alumno->setUsuario($usuario);
+                    $em->persist($alumno);
+                } elseif ($tipo === 'profesor') {
+                    $profesor = new Profesor();
+                    $profesor->setEspecialidad($especialidad);
+                    $profesor->setUsuario($usuario);
+                    $em->persist($profesor);
+                } elseif ($tipo === 'administrador') {
+                    $activo = $request->request->get('activo') === 'on' ? true : false;
+                    $admin = new Administrador();
+                    $admin->setActivo($activo);
+                    $admin->setUsuario($usuario);
+                    $em->persist($admin);
+                }
+
+                $em->flush();
+                return $this->redirectToRoute('app_usuario');
+            }
         }
 
         return $this->render('usuario/nuevo.html.twig', [
             'form' => $form->createView(),
             'titulo' => 'Nuevo usuario',
+            'errores' => $errores,
         ]);
     }
 
@@ -188,6 +211,7 @@ class UsuarioController extends AbstractController
     public function editar(int $id, Request $request, EntityManagerInterface $em): Response
     {
         $usuario = $em->getRepository(Usuario::class)->find($id);
+        $errores = [];
 
         if (!$usuario) {
             throw $this->createNotFoundException('Usuario no encontrado');
@@ -211,6 +235,11 @@ class UsuarioController extends AbstractController
                 'required' => false,
                 'attr' => ['class' => 'form-control'],
             ])
+            ->add('password', PasswordType::class, [
+                'label' => 'Contraseña',
+                'required' => false,
+                'attr' => ['class' => 'form-control'],
+            ])
             ->add('guardar', SubmitType::class, [
                 'label' => 'Guardar cambios',
                 'attr' => ['class' => 'btn btn-primary mt-3'],
@@ -219,36 +248,57 @@ class UsuarioController extends AbstractController
 
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Actualiza los datos adicionales según el tipo
-            if ($usuario->getTipo() === 'alumno' && $usuario->getAlumno()) {
-                $alumno = $usuario->getAlumno();
-                $fechaNacimiento = $request->request->get('fechaNacimiento');
-                $peso = $request->request->get('peso');
-                $altura = $request->request->get('altura');
-                $sexo = $request->request->get('sexo');
-                if ($fechaNacimiento) $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
-                if ($peso) $alumno->setPeso((int)$peso);
-                if ($altura) $alumno->setAltura((int)$altura);
-                if ($sexo) $alumno->setSexo($sexo);
-            } elseif ($usuario->getTipo() === 'profesor' && $usuario->getProfesor()) {
-                $profesor = $usuario->getProfesor();
-                $especialidad = $request->request->get('especialidad');
-                if ($especialidad) $profesor->setEspecialidad($especialidad);
-            } elseif ($usuario->getTipo() === 'administrador' && $usuario->getAdministrador()) {
-                $admin = $usuario->getAdministrador();
-                $activo = $request->request->get('activo') === 'on' ? true : false;
-                $admin->setActivo($activo);
+        if ($form->isSubmitted()) {
+            $nombre = $form->get('nombre')->getData();
+            $apellido1 = $form->get('apellido1')->getData();
+            $apellido2 = $form->get('apellido2')->getData();
+            $password = $form->get('password')->getData();
+
+            if (mb_strlen(trim($nombre)) < 3) {
+                $errores['nombre'] = 'El nombre debe tener al menos 3 caracteres.';
+            }
+            if (mb_strlen(trim($apellido1)) < 3) {
+                $errores['apellido1'] = 'El primer apellido debe tener al menos 3 caracteres.';
+            }
+            if ($apellido2 !== null && $apellido2 !== '' && mb_strlen(trim($apellido2)) < 3) {
+                $errores['apellido2'] = 'El segundo apellido debe tener al menos 3 caracteres si se indica.';
+            }
+            if ($password !== null && $password !== '' && mb_strlen(trim($password)) < 4) {
+                $errores['password'] = 'La contraseña debe tener al menos 4 caracteres.';
             }
 
-            $em->flush();
-            return $this->redirectToRoute('app_usuario');
+            if ($form->isValid() && !$errores) {
+                // Actualiza los datos adicionales según el tipo
+                if ($usuario->getTipo() === 'alumno' && $usuario->getAlumno()) {
+                    $alumno = $usuario->getAlumno();
+                    $fechaNacimiento = $request->request->get('fechaNacimiento');
+                    $peso = $request->request->get('peso');
+                    $altura = $request->request->get('altura');
+                    $sexo = $request->request->get('sexo');
+                    if ($fechaNacimiento) $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
+                    if ($peso) $alumno->setPeso((int)$peso);
+                    if ($altura) $alumno->setAltura((int)$altura);
+                    if ($sexo) $alumno->setSexo($sexo);
+                } elseif ($usuario->getTipo() === 'profesor' && $usuario->getProfesor()) {
+                    $profesor = $usuario->getProfesor();
+                    $especialidad = $request->request->get('especialidad');
+                    if ($especialidad) $profesor->setEspecialidad($especialidad);
+                } elseif ($usuario->getTipo() === 'administrador' && $usuario->getAdministrador()) {
+                    $admin = $usuario->getAdministrador();
+                    $activo = $request->request->get('activo') === 'on' ? true : false;
+                    $admin->setActivo($activo);
+                }
+
+                $em->flush();
+                return $this->redirectToRoute('app_usuario');
+            }
         }
 
         return $this->render('usuario/editar.html.twig', [
             'form' => $form->createView(),
             'titulo' => 'Editar usuario',
             'usuario' => $usuario,
+            'errores' => $errores,
         ]);
     }
 
