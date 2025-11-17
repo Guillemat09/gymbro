@@ -1,0 +1,9 @@
+{% block form_errors %}
+    {% if errors|length > 0 %}
+        <div class="text-danger mt-1" style="font-size: 0.9em;">
+            {% for error in errors %}
+                <div>{{ error.message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

@@ -7,6 +7,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ClaseRepository::class)]
 class Clase
@@ -17,21 +18,35 @@ class Clase
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\Length(
+        min: 3,
+        minMessage: "El nombre debe tener al menos {{ limit }} caracteres."
+    )]
     private ?string $nombre = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[Assert\GreaterThan(
+        value: "today",
+        message: "La fecha debe ser posterior a la fecha actual." 
+    )]
     private ?\DateTime $fecha = null;
 
     #[ORM\Column(type: Types::TIME_MUTABLE)]
     private ?\DateTime $hora = null;
 
     #[ORM\Column]
+    #[Assert\Positive(
+        message: "La duración debe ser un número mayor que 0."
+    )]
     private ?int $duracion = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $lugar = null;
 
     #[ORM\Column]
+    #[Assert\Positive(
+        message: "El límite de alumnos debe ser un número mayor que 0."
+    )]
     private ?int $limite = null;
 
     #[ORM\ManyToOne]

@@ -215,15 +215,36 @@
     }
 
     function renderChip(entry){
-      // entry: { id, date: 'YYYY-MM-DD', name, time }
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'class-chip btn btn-sm btn-light';
-      chip.textContent = entry.time ? `${entry.time} · ${entry.name}` : entry.name || 'Clase';
-      chip.dataset.classId = entry.id;
-      chip.addEventListener('click', () => openClassModal(entry.id));
-      return chip;
+    // entry: { id, date: 'YYYY-MM-DD', name, time }
+
+    // --- calcular si la clase es anterior a hoy ---
+    let isPast = false;
+    if (entry.date) {
+      const [y, m, d] = entry.date.split('-').map(Number);
+      const classDate = new Date(y, m - 1, d);
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      isPast = classDate < todayMidnight;
     }
+
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'class-chip btn btn-sm ' + (isPast ? 'btn-outline-secondary disabled-chip' : 'btn-light');
+    chip.textContent = entry.time ? `${entry.time} · ${entry.name}` : entry.name || 'Clase';
+    chip.dataset.classId = entry.id;
+
+    if (isPast) {
+      // Clase pasada → desactivar y no permitir abrir modal de reserva
+      chip.disabled = true;
+      chip.title = 'Clase pasada: no se pueden hacer reservas.';
+    } else {
+      // Clase futura → se puede reservar
+      chip.addEventListener('click', () => openClassModal(entry.id));
+    }
+
+    return chip;
+  }
+
 
     async function loadMonthData(year, month){
       // Backend Symfony: GET ...?year=YYYY&month=MM (1..12)

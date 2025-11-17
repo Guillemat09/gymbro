@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Reserva;
 use App\Entity\Alumno;
 use App\Entity\Clase;
+use App\Repository\ClaseRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -110,10 +111,20 @@ class ReservaController extends AbstractController
             ]);
         }
 
-        $builder->add('clase', EntityType::class, [
+      $builder->add('clase', EntityType::class, [
             'class' => Clase::class,
-            'choice_label' => 'nombre',
-            // data-* para que la plantilla muestre profesor/fecha de la clase
+            'query_builder' => function (ClaseRepository $cr) {
+                $hoy = new \DateTimeImmutable('today'); // día actual a las 00:00
+
+                return $cr->createQueryBuilder('c')
+                    ->where('c.fecha >= :hoy')
+                    ->setParameter('hoy', $hoy)
+                    ->orderBy('c.fecha', 'ASC');
+            },
+            'choice_label' => function (Clase $c) {
+                $fecha = $c->getFecha()?->format('d/m/Y') ?? '';
+                return sprintf('%s — %s', $c->getNombre(), $fecha);
+            },
             'choice_attr' => function (Clase $c) {
                 $prof  = $c->getProfesor()?->getUsuario()?->getNombre() ?? 'Sin profesor';
                 $fecha = $c->getFecha()?->format('d/m/Y') ?? 'Sin fecha';
@@ -125,7 +136,8 @@ class ReservaController extends AbstractController
             'placeholder' => '— Selecciona clase —',
             'required'    => true,
             'attr'        => ['class' => 'form-select', 'id' => 'clase-select'],
-        ]);
+    ]);
+
 
         // $builder->add('guardar', SubmitType::class, ['label' => 'Guardar reserva']);
 

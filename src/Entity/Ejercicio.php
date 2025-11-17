@@ -4,6 +4,8 @@ namespace App\Entity;
 
 use App\Repository\EjercicioRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 #[ORM\Entity(repositoryClass: EjercicioRepository::class)]
 class Ejercicio
@@ -14,18 +16,37 @@ class Ejercicio
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+       #[Assert\Length(
+        min: 3,
+        minMessage: 'El nombre debe tener al menos {{ limit }} caracteres.'
+    )]
     private ?string $nombre = null;
 
     #[ORM\Column(length: 255)]
+     #[Assert\Length(
+        min: 3,
+        minMessage: 'La descripción debe tener al menos {{ limit }} caracteres.'
+    )]
     private ?string $descripcion = null;
 
     #[ORM\Column(length: 70)]
+      #[Assert\Length(
+        min: 3,
+        minMessage: 'La dificultad debe tener al menos {{ limit }} caracteres.'
+    )]
     private ?string $dificultad = null;
 
     #[ORM\Column(length: 255)]
+       #[Assert\Length(
+        min: 3,
+        minMessage: 'El músculo principal debe tener al menos {{ limit }} caracteres.'
+    )]
     private ?string $musculo_principal = null;
 
     #[ORM\Column]
+     #[Assert\Positive(
+        message: 'Las repeticiones deben ser un número mayor que 0.'
+    )]
     private ?int $repeticiones = null;
 
     public function getId(): ?int

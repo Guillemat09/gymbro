@@ -202,10 +202,6 @@ final class ClaseController extends AbstractController
         $form = $builder->getForm();
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && !$form->isValid()) {
-            $this->flashFormErrors($form);
-        }
-
         if ($form->isSubmitted() && $form->isValid()) {
             if ($esProfesor) {
                 // Asegura de nuevo (por si cambió algo)
@@ -319,10 +315,6 @@ final class ClaseController extends AbstractController
 
         $form = $builder->getForm();
         $form->handleRequest($request);
-
-        if ($form->isSubmitted() && !$form->isValid()) {
-            $this->flashFormErrors($form);
-        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             if ($esProfesor && !$this->isGranted('ROLE_ADMIN')) {
