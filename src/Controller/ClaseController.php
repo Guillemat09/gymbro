@@ -76,38 +76,61 @@ final class ClaseController extends AbstractController
         }
     }
 
-    #[Route('/clase', name: 'app_clase', methods: ['GET'])]
-    public function index(EntityManagerInterface $em, Request $request, PaginatorInterface $paginator): Response
-    {
-        // Tamaños por página permitidos y valor por defecto
-        $perPageOptions = [10, 25, 50, 100];
-        $perPage = (int) $request->query->get('per_page', 10);
-        if (!in_array($perPage, $perPageOptions, true)) {
-            $perPage = 10;
-        }
-        $page = max(1, $request->query->getInt('page', 1));
-
-        // Query base
-        $qb = $em->getRepository(Clase::class)->createQueryBuilder('c')
-            ->leftJoin('c.profesor', 'p')->addSelect('p')
-            ->leftJoin('p.usuario', 'u')->addSelect('u')
-            ->addOrderBy('c.fecha', 'ASC')
-            ->addOrderBy('c.hora', 'ASC');
-
-        // Paginación
-        $pagination = $paginator->paginate(
-            $qb,
-            $page,
-            $perPage
-        );
-
-        return $this->render('clase/index.html.twig', [
-            'clases'         => $pagination,
-            'titulo'         => 'Listado de clases',
-            'per_page'       => $perPage,
-            'perPageOptions' => $perPageOptions,
-        ]);
+   #[Route('/clase', name: 'app_clase', methods: ['GET'])]
+public function index(EntityManagerInterface $em, Request $request, PaginatorInterface $paginator): Response
+{
+    // Tamaños por página permitidos y valor por defecto
+    $perPageOptions = [10, 25, 50, 100];
+    $perPage = (int) $request->query->get('per_page', 10);
+    if (!in_array($perPage, $perPageOptions, true)) {
+        $perPage = 10;
     }
+    $page = max(1, $request->query->getInt('page', 1));
+
+    // 🔎 Filtros
+    $q        = trim($request->query->get('q', ''));           // nombre de clase
+    $profesor = trim($request->query->get('profesor', ''));    // nombre/apellidos profesor
+
+    // Query base
+    $qb = $em->getRepository(Clase::class)->createQueryBuilder('c')
+        ->leftJoin('c.profesor', 'p')->addSelect('p')
+        ->leftJoin('p.usuario', 'u')->addSelect('u')
+        ->addOrderBy('c.fecha', 'ASC')
+        ->addOrderBy('c.hora', 'ASC');
+
+    // 📌 Filtro por nombre de clase
+    if ($q !== '') {
+        $qb->andWhere('c.nombre LIKE :q')
+           ->setParameter('q', '%'.$q.'%');
+    }
+
+    // 📌 Filtro por profesor (nombre o apellidos)
+    if ($profesor !== '') {
+        $qb->andWhere('u.nombre LIKE :profesor 
+                       OR u.apellido1 LIKE :profesor 
+                       OR u.apellido2 LIKE :profesor 
+                       OR CONCAT(u.nombre, \' \', u.apellido1) LIKE :profesor')
+           ->setParameter('profesor', '%'.$profesor.'%');
+    }
+
+    // Paginación
+    $pagination = $paginator->paginate(
+        $qb,
+        $page,
+        $perPage
+    );
+
+    return $this->render('clase/index.html.twig', [
+        'clases'         => $pagination,
+        'titulo'         => 'Listado de clases',
+        'per_page'       => $perPage,
+        'perPageOptions' => $perPageOptions,
+        // 👇 Pasamos los filtros a la vista
+        'q'              => $q,
+        'profesor'       => $profesor,
+    ]);
+}
+
 
     #[Route('/clase/nueva', name: 'clase_nueva', methods: ['GET','POST'])]
     public function nueva(Request $request, EntityManagerInterface $em): Response

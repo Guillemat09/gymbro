@@ -21,30 +21,71 @@
     {% endfor %}
     {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
 
-    <div class="row g-2 align-items-end mb-3">
-        <div class="col-12 col-lg-4 d-flex align-items-center ms-auto">
-            <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
-                {% for k, v in app.request.query.all %}
-                    {% if k not in ['per_page', 'page'] %}
-                        {% if v is iterable %}
-                            {% for vv in v %}
-                                <input type="hidden" name="{{ k }}[]" value="{{ vv }}">
-                            {% endfor %}
-                        {% else %}
-                            <input type="hidden" name="{{ k }}" value="{{ v }}">
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
-                <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
-                <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
-                    {% for opt in perPageOptions %}
-                        <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }}</option>
-                    {% endfor %}
-                </select>
-                <span class="text-muted">/ pág.</span>
-            </form>
-        </div>
+  <div class="row g-2 align-items-end mb-3">
+    {# === Filtros === #}
+    <div class="col-12 col-lg-8">
+        <form method="get" id="filter-form" class="row g-2">
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            <input type="hidden" name="page" value="1">
+
+            <div class="col-sm-6">
+                <label for="q" class="form-label mb-0">Nombre de clase</label>
+                <input type="text"
+                       class="form-control"
+                       id="q"
+                       name="q"
+                       value="{{ q }}"
+                       placeholder="Ej: Body Pump, Yoga...">
+            </div>
+
+            <div class="col-sm-6">
+                <label for="profesor" class="form-label mb-0">Profesor</label>
+                <input type="text"
+                       class="form-control"
+                       id="profesor"
+                       name="profesor"
+                       value="{{ profesor }}"
+                       placeholder="Nombre o apellidos del profesor">
+            </div>
+
+            <div class="col-sm-6 col-md-3 d-grid">
+                <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>
+            </div>
+
+            <div class="col-sm-6 col-md-3 d-grid">
+                {% if q or profesor %}
+                    <a class="btn btn-outline-secondary btn-lg w-100" href="{{ path('app_clase') }}">
+                        Quitar filtrado
+                    </a>
+                {% endif %}
+            </div>
+        </form>
     </div>
+
+    {# === Selector de per_page (igual que ya tenías) === #}
+    <div class="col-12 col-lg-4 d-flex align-items-center">
+        <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
+            {% for k, v in app.request.query.all %}
+                {% if k not in ['per_page', 'page'] %}
+                    {% if v is iterable %}
+                        {% for vv in v %}
+                            <input type="hidden" name="{{ k }}[]" value="{{ vv }}">
+                        {% endfor %}
+                    {% else %}
+                        <input type="hidden" name="{{ k }}" value="{{ v }}">
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            <label for="per_page" class="me-2 mb-0 text-nowrap">Mostrar</label>
+            <select name="per_page" id="per_page" class="form-select form-select-sm me-2" style="width:auto;">
+                {% for opt in perPageOptions %}
+                    <option value="{{ opt }}" {% if opt == per_page %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+            <span class="text-muted">/ pág.</span>
+        </form>
+    </div>
+</div>
 
     <table class="table table-striped table-bordered">
         <thead class="table-dark">
