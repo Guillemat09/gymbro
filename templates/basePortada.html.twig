@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>{% block title %}GymBro{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+        {% block stylesheets %}{% endblock %}
+
+        {% block javascripts %}
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        {% endblock %}
+
+        <style>
+            .hero {
+                position: relative;
+                height: 180px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-image: url("{{ asset('imagenes/imagen_gimnasio.jpg') }}");
+                background-size: cover;
+                background-position: center;
+                color: #fff;
+                overflow: hidden;
+            }
+            .hero::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgba(0,0,0,0.45);
+            }
+            .hero-title {
+                position: relative;
+                z-index: 2;
+                font-size: 2.25rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+                font-family: 'Poppins', system-ui;
+                margin: 0;
+            }
+            @media (max-width: 576px) {
+                .hero { height: 140px; }
+                .hero-title { font-size: 1.75rem; }
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <!-- Hero -->
+        <header class="hero">
+            <h1 class="hero-title">GYMBRO</h1>
+        </header>
+
+        <!-- Navbar simplificada (solo inicio e iniciar sesión) -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand" href="{{ path('app_portada') }}">GymBro</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarPortada" aria-controls="navbarPortada"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarPortada">
+                    <ul class="navbar-nav ms-auto">
+                        {% if not app.user %}
+                            <li class="nav-item">
+                                <a class="btn btn-outline-light ms-lg-3" href="{{ path('app_login') }}">
+                                    Iniciar sesión
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="btn btn-outline-light ms-lg-3" href="{{ path('app_reserva') }}">
+                                    Ir a la aplicación
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-4">
+            {% block body %}{% endblock %}
+        </div>
+
+        <footer class="bg-light mt-5 py-3">
+            <div class="container text-center">
+                <small class="text-muted">© 2025 GymBro</small>
+            </div>
+        </footer>
+
+    </body>
+</html>

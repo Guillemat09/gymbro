@@ -41,21 +41,24 @@ security:
 
   # Orden: primero lo más específico
   access_control:
-    # Público
-    - { path: ^/login, roles: PUBLIC_ACCESS }
-    - { path: ^/(?:css|js|images|build)/, roles: PUBLIC_ACCESS }
+  # Rutas públicas
+  - { path: ^/login, roles: PUBLIC_ACCESS }
+  - { path: ^/$, roles: PUBLIC_ACCESS }                    # Portada (/)
+  - { path: ^/(?:css|js|images|build)/, roles: PUBLIC_ACCESS }
+  - { path: ^/imagenes/, roles: PUBLIC_ACCESS }            # Tus fotos del gimnasio
 
-    # Gestión de usuarios: solo ADMIN
-    - { path: ^/usuario, roles: ROLE_ADMIN }
+  # Gestión de usuarios: solo ADMIN
+  - { path: ^/usuario, roles: ROLE_ADMIN }
 
-    # Clases: ADMIN y PROFESOR
-    - { path: ^/clase, roles: [ROLE_ADMIN, ROLE_PROFESOR] }
+  # Clases: ADMIN y PROFESOR
+  - { path: ^/clase, roles: [ROLE_ADMIN, ROLE_PROFESOR] }
 
-    # Reservas: ADMIN, PROFESOR y ALUMNO
-    - { path: ^/reserva, roles: [ROLE_ADMIN, ROLE_PROFESOR, ROLE_ALUMNO] }
+  # Reservas: ADMIN, PROFESOR y ALUMNO
+  - { path: ^/reserva, roles: [ROLE_ADMIN, ROLE_PROFESOR, ROLE_ALUMNO] }
 
-    # Rutinas: ADMIN, PROFESOR y ALUMNO
-    - { path: ^/rutina, roles: [ROLE_ADMIN, ROLE_PROFESOR, ROLE_ALUMNO] }
+  # Rutinas: ADMIN, PROFESOR y ALUMNO
+  - { path: ^/rutina, roles: [ROLE_ADMIN, ROLE_PROFESOR, ROLE_ALUMNO] }
 
-    # Fallback: cualquier otra ruta requiere al menos usuario autenticado
-    - { path: ^/, roles: ROLE_USER }
+  # Fallback: cualquier otra ruta requiere al menos usuario autenticado
+  - { path: ^/, roles: ROLE_USER }
+

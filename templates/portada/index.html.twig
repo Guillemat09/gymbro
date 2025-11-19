@@ -1,0 +1,145 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Bienvenido a GymBro{% endblock %}
+
+{% block body %}
+    {# Sección "Sobre el gimnasio" #}
+    <section class="py-5">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-4 mb-md-0">
+                <h2 class="fw-bold mb-3">Tu gimnasio de confianza</h2>
+                <p class="text-muted">
+                    En <strong>GymBro</strong> queremos ayudarte a conseguir tus objetivos,
+                    tanto si estás empezando como si eres un atleta experimentado.
+                    Contamos con entrenadores cualificados, maquinaria de última generación
+                    y un ambiente cercano y motivador.
+                </p>
+                <p class="text-muted mb-3">
+                    Ofrecemos clases dirigidas, entrenamientos personalizados,
+                    rutinas adaptadas a tu nivel y seguimiento continuo de tu progreso.
+                </p>
+            </div>
+            <div class="col-md-6">
+                <div class="ratio ratio-16x9 rounded-3 overflow-hidden shadow-sm">
+                    <img src="{{ asset('imagenes/imagen_gimnasio.jpg') }}" class="w-100 h-100 object-fit-cover" alt="Vista general del gimnasio">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="my-5">
+
+    {# Sección Servicios #}
+    <section id="servicios" class="py-4">
+        <h2 class="fw-bold mb-4 text-center">Servicios que ofrecemos</h2>
+
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-people-fill me-2"></i> Clases dirigidas
+                        </h5>
+                        <p class="card-text text-muted">
+                            Zumba, spinning, body pump, HIIT, yoga y mucho más.
+                            Horarios flexibles para que puedas entrenar cuando mejor te venga.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-person-badge-fill me-2"></i> Entrenamiento personal
+                        </h5>
+                        <p class="card-text text-muted">
+                            Entrenadores especializados que diseñan un plan
+                            a tu medida, con seguimiento de tus progresos y asesoramiento continuo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-heart-pulse-fill me-2"></i> Planes de nutrición
+                        </h5>
+                        <p class="card-text text-muted">
+                            Consejos nutricionales y pautas de alimentación para complementar
+                            tus entrenamientos y mejorar tu bienestar general.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="my-5">
+
+    {# Sección Instalaciones #}
+    <section id="instalaciones" class="py-4">
+        <h2 class="fw-bold mb-4 text-center">Nuestras instalaciones</h2>
+
+        <div class="row g-4">
+            <div class="col-md-3 col-6">
+                <div class="text-center">
+                    <div class="ratio ratio-4x3 rounded-3 overflow-hidden shadow-sm mb-2">
+                        <img src="{{ asset('imagenes/sala_musculacion.jpg') }}" class="w-100 h-100 object-fit-cover" alt="Sala de musculación">
+                    </div>
+                    <p class="fw-semibold mb-0">Sala de musculación</p>
+                    <small class="text-muted">Máquinas y peso libre</small>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="text-center">
+                    <div class="ratio ratio-4x3 rounded-3 overflow-hidden shadow-sm mb-2">
+                        <img src="{{ asset('imagenes/sala_cardio.jpg') }}" class="w-100 h-100 object-fit-cover" alt="Sala de cardio">
+                    </div>
+                    <p class="fw-semibold mb-0">Zona cardio</p>
+                    <small class="text-muted">Cintas, elípticas y bicis</small>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="text-center">
+                    <div class="ratio ratio-4x3 rounded-3 overflow-hidden shadow-sm mb-2">
+                        <img src="{{ asset('imagenes/sala_clases.jpg') }}" class="w-100 h-100 object-fit-cover" alt="Sala de clases dirigidas">
+                    </div>
+                    <p class="fw-semibold mb-0">Salas de actividades</p>
+                    <small class="text-muted">Clases dirigidas todo el día</small>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-6">
+                <div class="text-center">
+                    <div class="ratio ratio-4x3 rounded-3 overflow-hidden shadow-sm mb-2">
+                        <img src="{{ asset('imagenes/vestuarios.jpg') }}" class="w-100 h-100 object-fit-cover" alt="Vestuarios del gimnasio">
+                    </div>
+                    <p class="fw-semibold mb-0">Vestuarios y taquillas</p>
+                    <small class="text-muted">Cómodos y equipados</small>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="my-5">
+
+    {# Sección llamada a la acción #}
+    <section class="py-5">
+        <div class="text-center">
+            <h2 class="fw-bold mb-3">¿Preparado para empezar?</h2>
+            <p class="text-muted mb-4">
+                Crea tu cuenta, reserva tus clases y lleva un control completo
+                de tus rutinas y progresos con GymBro.
+            </p>
+            <a href="{{ path('app_login') }}" class="btn btn-lg btn-success">
+                Iniciar sesión 
+            </a>
+        </div>
+    </section>
+{% endblock %}
