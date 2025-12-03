@@ -115,35 +115,83 @@
     </div>
   {% endfor %}
 {% endfor %}
+{# ====== Ordenación con iconos ====== #}
+{% set currentSort = app.request.query.get('sort') %}
+{% set currentDir  = app.request.query.get('direction')|default('asc') %}
+
+{% macro sort_icon(field, currentSort, currentDir) %}
+    {% if currentSort == field %}
+        {% if currentDir == 'desc' %}
+            <i class="bi bi-caret-down-fill ms-1"></i>
+        {% else %}
+            <i class="bi bi-caret-up-fill ms-1"></i>
+        {% endif %}
+    {% else %}
+        <i class="bi bi-arrow-down-up ms-1 opacity-50"></i>
+    {% endif %}
+{% endmacro %}
+{% import _self as self %}
+
+{# Detectar si el usuario es solo alumno (sin ser admin o profesor) #}
+{% set esAlumnoSolo =
+    is_granted('ROLE_ALUMNO') 
+    and not is_granted('ROLE_ADMIN') 
+    and not is_granted('ROLE_PROFESOR')
+%}
+
 
 <div class="table-responsive">
-  <table class="table table-hover align-middle">
+  <table class="table table-striped table-bordered">
     <thead class="table-dark">
-      <tr>
-        <th>
-          {{ knp_pagination_sortable(reservas, 'ID', 'r.id')|raw }}
-        </th>
-        {% set esAlumnoSolo = is_granted('ROLE_ALUMNO') and not is_granted('ROLE_ADMIN') and not is_granted('ROLE_PROFESOR') %}
-        {% if not esAlumnoSolo %}
-          <th>
+<tr>
+    <th>
+        <span class="sortable-header">
+            {{ knp_pagination_sortable(reservas, 'ID', 'r.id')|raw }}
+        </span>
+        {{ self.sort_icon('r.id', currentSort, currentDir) }}
+    </th>
+
+    {% if not esAlumnoSolo %}
+    <th>
+        <span class="sortable-header">
             {{ knp_pagination_sortable(reservas, 'Alumno', 'au.nombre')|raw }}
-          </th>
-        {% endif %}
-        <th>
-          {{ knp_pagination_sortable(reservas, 'Fecha de reserva', 'r.fecha')|raw }}
-        </th>
-        <th>
-          {{ knp_pagination_sortable(reservas, 'Clase', 'c.nombre')|raw }}
-        </th>
-        <th>
-          {{ knp_pagination_sortable(reservas, 'Fecha de clase', 'c.fecha')|raw }}
-        </th>
-        <th>
-          {{ knp_pagination_sortable(reservas, 'Profesor', 'pu.nombre')|raw }}
-        </th>
-        <th class="text-center">Opciones</th>
-      </tr>
-    </thead>
+        </span>
+        {{ self.sort_icon('au.nombre', currentSort, currentDir) }}
+    </th>
+    {% endif %}
+
+    <th>
+        <span class="sortable-header">
+            {{ knp_pagination_sortable(reservas, 'Fecha de reserva', 'r.fecha')|raw }}
+        </span>
+        {{ self.sort_icon('r.fecha', currentSort, currentDir) }}
+    </th>
+
+    <th>
+        <span class="sortable-header">
+            {{ knp_pagination_sortable(reservas, 'Clase', 'c.nombre')|raw }}
+        </span>
+        {{ self.sort_icon('c.nombre', currentSort, currentDir) }}
+    </th>
+
+    <th>
+        <span class="sortable-header">
+            {{ knp_pagination_sortable(reservas, 'Fecha de clase', 'c.fecha')|raw }}
+        </span>
+        {{ self.sort_icon('c.fecha', currentSort, currentDir) }}
+    </th>
+
+    <th>
+        <span class="sortable-header">
+            {{ knp_pagination_sortable(reservas, 'Profesor', 'pu.nombre')|raw }}
+        </span>
+        {{ self.sort_icon('pu.nombre', currentSort, currentDir) }}
+    </th>
+
+    <th class="text-center">Opciones</th>
+</tr>
+</thead>
+
     <tbody>
     {% for reserva in reservas %}
       <tr>
@@ -255,6 +303,16 @@
         </nav>
     </div>
 </div>
+<style>
+    thead.table-dark a {
+        color: #fff !important;
+        text-decoration: none !important;
+    }
+    thead.table-dark a:hover {
+        color: #ccc !important;
+        text-decoration: underline;
+    }
+</style>
 
 <script>
     document.getElementById('per_page')?.addEventListener('change', function() {
