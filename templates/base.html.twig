@@ -83,80 +83,98 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <div class="collapse navbar-collapse" id="mainNavbar">
-                    {% set current = app.request.attributes.get('_route') %}
+<div class="collapse navbar-collapse" id="mainNavbar">
+    {% set current = app.request.attributes.get('_route') %}
 
-                    {# Menú condicionado por rol. Si no hay usuario, no mostramos enlaces de app. #}
-                    {% if app.user %}
-                      <ul class="navbar-nav me-auto">
+    {# =============================================================
+       USUARIO EN MÓVIL: aparece arriba dentro del menú
+       ============================================================= #}
+    <ul class="navbar-nav d-lg-none mb-2">
+      {% if app.user %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-2"></i>
+            {{ app.user.nombre ? app.user.nombre : app.user.email }}
+          </a>
+          <ul class="dropdown-menu">
+            <li class="dropdown-header">{{ app.user.email }}</li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item text-danger" href="{{ path('app_logout') }}">
+                <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+              </a>
+            </li>
+          </ul>
+        </li>
+      {% endif %}
+    </ul>
 
-                        {# Usuarios: solo ADMIN #}
-                        {% if is_granted('ROLE_ADMIN') %}
-                          <li class="nav-item">
-                            <a class="nav-link {{ current is defined and (current starts with 'app_usuario' or current starts with 'usuario') ? 'active' }}" href="{{ path('app_usuario') }}">Usuarios</a>
-                          </li>
-                        {% endif %}
+    {# =============================================================
+       ENLACES DEL MENÚ (se muestran siempre)
+       ============================================================= #}
+    {% if app.user %}
+      <ul class="navbar-nav me-auto">
+        {% if is_granted('ROLE_ADMIN') %}
+          <li class="nav-item">
+            <a class="nav-link {{ current starts with 'app_usuario' ? 'active' }}" href="{{ path('app_usuario') }}">Usuarios</a>
+          </li>
+        {% endif %}
 
-                        {# Clases: ADMIN y PROFESOR #}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
-                          <li class="nav-item">
-                            <a class="nav-link {{ current is defined and (current starts with 'app_clase' or current starts with 'clase') ? 'active' }}" href="{{ path('app_clase') }}">Clases</a>
-                          </li>
-                        {% endif %}
+        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
+          <li class="nav-item">
+            <a class="nav-link {{ current starts with 'app_clase' ? 'active' }}" href="{{ path('app_clase') }}">Clases</a>
+          </li>
+        {% endif %}
 
-                        {# Reservas: ADMIN, PROFESOR y ALUMNO #}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') or is_granted('ROLE_ALUMNO') %}
-                          <li class="nav-item">
-                            <a class="nav-link {{ current is defined and (current starts with 'app_reserva' or current starts with 'reserva') ? 'active' }}" href="{{ path('app_reserva') }}">Reservas</a>
-                          </li>
-                        {% endif %}
+        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') or is_granted('ROLE_ALUMNO') %}
+          <li class="nav-item">
+            <a class="nav-link {{ current starts with 'app_reserva' ? 'active' }}" href="{{ path('app_reserva') }}">Reservas</a>
+          </li>
+        {% endif %}
 
-                        {# Rutinas: ADMIN, PROFESOR y ALUMNO #}
-                        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') or is_granted('ROLE_ALUMNO') %}
-                          <li class="nav-item">
-                            <a class="nav-link {{ current is defined and (current starts with 'app_rutina' or current starts with 'rutina') ? 'active' }}" href="{{ path('app_rutina') }}">Rutinas</a>
-                          </li>
-                        {% endif %}
+        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') or is_granted('ROLE_ALUMNO') %}
+          <li class="nav-item">
+            <a class="nav-link {{ current starts with 'app_rutina' ? 'active' }}" href="{{ path('app_rutina') }}">Rutinas</a>
+          </li>
+        {% endif %}
 
-                      {# Ejercicios: ADMIN, PROFESOR  #}
-                      {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
-                       <li class="nav-item">
-                           <a class="nav-link {{ current is defined and (current starts with 'app_ejercicio' or current starts with 'ejercicio') ? 'active' }}" href="{{ path('app_ejercicio') }}">Ejercicios</a>
-                       </li>
-                       {% endif %}
+        {% if is_granted('ROLE_ADMIN') or is_granted('ROLE_PROFESOR') %}
+          <li class="nav-item">
+            <a class="nav-link {{ current starts with 'app_ejercicio' ? 'active' }}" href="{{ path('app_ejercicio') }}">Ejercicios</a>
+          </li>
+        {% endif %}
+      </ul>
+    {% endif %}
 
-                      </ul>
-                    {% endif %}
+    {# =============================================================
+       USUARIO EN ESCRITORIO: aparece fuera del menú, a la derecha
+       ============================================================= #}
+    <ul class="navbar-nav ms-auto d-none d-lg-flex">
+      {% if app.user %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle me-2"></i>
+            {{ app.user.nombre ? app.user.nombre : app.user.email }}
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li class="dropdown-header">{{ app.user.email }}</li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item text-danger" href="{{ path('app_logout') }}">
+                <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
+              </a>
+            </li>
+          </ul>
+        </li>
+      {% else %}
+        <li class="nav-item">
+          <a class="btn btn-outline-light ms-lg-3" href="{{ path('app_login') }}">Iniciar sesión</a>
+        </li>
+      {% endif %}
+    </ul>
+</div>
 
-                    <ul class="navbar-nav ms-auto">
-                      {% if app.user %}
-                        <li class="nav-item dropdown">
-                          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle me-2"></i>
-                            <span class="d-none d-sm-inline">
-                              {{ app.user.nombre is defined and app.user.nombre ? app.user.nombre : app.user.email }}
-                            </span>
-                          </a>
-                          <ul class="dropdown-menu dropdown-menu-end">
-                            <li class="dropdown-header">
-                              {{ app.user.email }}
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            {# <li><a class="dropdown-item" href="{{ path('perfil') }}">Mi perfil</a></li> #}
-                            <li>
-                              <a class="dropdown-item text-danger" href="{{ path('app_logout') }}">
-                                <i class="bi bi-box-arrow-right me-2"></i> Cerrar sesión
-                              </a>
-                            </li>
-                          </ul>
-                        </li>
-                      {% else %}
-                        <li class="nav-item">
-                          <a class="btn btn-outline-light ms-lg-3" href="{{ path('app_login') }}">Iniciar sesión</a>
-                        </li>
-                      {% endif %}
-                    </ul>
-                </div>
+
             </div>
         </nav>
 

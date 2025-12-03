@@ -231,27 +231,35 @@
                     </button>
 
                     {# Modal #}
-                    <div class="modal fade" id="modalEliminarClase{{ clase.id }}"
-                         tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form method="post" action="{{ path('clase_eliminar', {'id': clase.id}) }}">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">¿Eliminar clase?</h5>
-                                        <button class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        ¿Seguro que deseas eliminar
-                                        <strong>{{ clase.nombre }}</strong> (ID {{ clase.id }})?
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                        <button class="btn btn-danger" {% if not puedeEditar %}disabled{% endif %}>Eliminar</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+<div class="modal fade" id="modalEliminarClase{{ clase.id }}"
+     tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{{ path('clase_eliminar', {'id': clase.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('eliminar_clase_' ~ clase.id) }}">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">¿Eliminar clase?</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    ¿Seguro que deseas eliminar esta clase?
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-danger" {% if not puedeEditar %}disabled{% endif %}>
+                        Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
                 </td>
             </tr>

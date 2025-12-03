@@ -373,24 +373,29 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
         ]);
     }
 
-    #[Route('/clase/{id}/eliminar', name: 'clase_eliminar', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function eliminar(Request $request, int $id, EntityManagerInterface $em): Response
-    {
-        $clase = $em->getRepository(Clase::class)->find($id);
-        if (!$clase) {
-            throw $this->createNotFoundException('Clase no encontrada');
-        }
+   #[Route('/clase/{id}/eliminar', name: 'clase_eliminar', requirements: ['id' => '\d+'], methods: ['POST'])]
+public function eliminar(Request $request, int $id, EntityManagerInterface $em): Response
+{
+    $clase = $em->getRepository(Clase::class)->find($id);
+    if (!$clase) {
+        throw $this->createNotFoundException('Clase no encontrada');
+    }
 
-        $token = $request->request->get('_token');
-        if ($token !== null && !$this->isCsrfTokenValid('eliminar_clase_'.$clase->getId(), $token)) {
-            $this->addFlash('danger', 'Token CSRF inválido.');
-            return $this->redirectToRoute('app_clase');
-        }
+    if (!$this->isCsrfTokenValid('eliminar_clase_'.$clase->getId(), $request->request->get('_token'))) {
+        $this->addFlash('danger', 'Token CSRF inválido.');
+        return $this->redirectToRoute('app_clase');
+    }
 
+    try {
         $em->remove($clase);
         $em->flush();
 
-        $this->addFlash('success', 'Clase eliminada.');
-        return $this->redirectToRoute('app_clase');
+        $this->addFlash('success', 'Clase eliminada correctamente.');
+    } catch (\Doctrine\DBAL\Exception\ForeignKeyConstraintViolationException $e) {
+        $this->addFlash('danger', 'No se puede eliminar esta clase porque tiene reservas asociadas.');
     }
+
+    return $this->redirectToRoute('app_clase');
+}
+
 }
