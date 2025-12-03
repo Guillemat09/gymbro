@@ -2,8 +2,16 @@
 
 {% block title %}{{ titulo }}{% endblock %}
 
+{# --- BOTÓN VOLVER ATRÁS --- #}
+{% block back_button %}
+<a href="javascript:history.back()" class="btn btn-outline-primary mb-3">
+    <i class="bi bi-arrow-left"></i> Volver atrás
+</a>
+{% endblock %}
+
 {% block body %}
     <h1 class="display-5 mb-4">{{ titulo }}</h1>
+
     <div class="card">
         <div class="card-header">
             Datos del usuario
@@ -35,13 +43,17 @@
                 <dl class="row">
                     <dt class="col-sm-3">Fecha de nacimiento</dt>
                     <dd class="col-sm-9">{{ usuario.alumno.fechaNacimiento|date('d/m/Y') }}</dd>
+
                     <dt class="col-sm-3">Peso</dt>
                     <dd class="col-sm-9">{{ usuario.alumno.peso }} kg</dd>
+
                     <dt class="col-sm-3">Altura</dt>
                     <dd class="col-sm-9">{{ usuario.alumno.altura }} cm</dd>
+
                     <dt class="col-sm-3">Sexo</dt>
                     <dd class="col-sm-9">{{ usuario.alumno.sexo|capitalize }}</dd>
                 </dl>
+
             {% elseif usuario.tipo == 'profesor' and usuario.profesor %}
                 <hr>
                 <h5>Datos de Profesor</h5>
@@ -49,6 +61,7 @@
                     <dt class="col-sm-3">Especialidad</dt>
                     <dd class="col-sm-9">{{ usuario.profesor.especialidad }}</dd>
                 </dl>
+
             {% elseif usuario.tipo == 'administrador' and usuario.administrador %}
                 <hr>
                 <h5>Datos de Administrador</h5>
@@ -63,8 +76,7 @@
                     </dd>
                 </dl>
             {% endif %}
-
-            <a href="{{ path('app_usuario') }}" class="btn btn-secondary mt-3">Volver</a>
         </div>
     </div>
+
 {% endblock %}

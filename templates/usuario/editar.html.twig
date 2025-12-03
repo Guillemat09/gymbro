@@ -2,8 +2,16 @@
 
 {% block title %}{{ titulo }}{% endblock %}
 
+{# --- BOTÓN VOLVER ATRÁS (usando el bloque del layout) --- #}
+{% block back_button %}
+<a href="javascript:history.back()" class="btn btn-outline-primary mb-3">
+    <i class="bi bi-arrow-left"></i> Volver atrás
+</a>
+{% endblock %}
+
 {% block body %}
     <h1 class="display-5 mb-4">{{ titulo }}</h1>
+
     <div class="card p-4">
         {{ form_start(form) }}
             {{ form_row(form.email) }}
@@ -50,6 +58,7 @@
                         <option value="otro" {% if usuario.alumno.sexo == 'otro' %}selected{% endif %}>Otro</option>
                     </select>
                 </div>
+
             {% elseif usuario.tipo == 'profesor' and usuario.profesor %}
                 <hr>
                 <h5>Datos de Profesor</h5>
@@ -58,6 +67,7 @@
                     <input type="text" id="especialidad" name="especialidad" class="form-control"
                         value="{{ usuario.profesor.especialidad }}">
                 </div>
+
             {% elseif usuario.tipo == 'administrador' and usuario.administrador %}
                 <hr>
                 <h5>Datos de Administrador</h5>

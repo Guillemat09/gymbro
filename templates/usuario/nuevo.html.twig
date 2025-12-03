@@ -2,8 +2,16 @@
 
 {% block title %}{{ titulo }}{% endblock %}
 
+{# --- BOTÓN VOLVER ATRÁS (usando el bloque del layout) --- #}
+{% block back_button %}
+<a href="javascript:history.back()" class="btn btn-outline-primary mb-3">
+    <i class="bi bi-arrow-left"></i> Volver atrás
+</a>
+{% endblock %}
+
 {% block body %}
     <h1 class="display-5 mb-4">{{ titulo }}</h1>
+
     <div class="card p-4">
         {{ form_start(form) }}
             {{ form_row(form.email) }}
@@ -57,12 +65,14 @@
                     </select>
                 </div>
             </div>
+
             <div id="profesor-fields" style="display:none;">
                 <div class="mb-3">
                     <label for="especialidad" class="form-label">Especialidad</label>
                     <input type="text" id="especialidad" name="especialidad" class="form-control">
                 </div>
             </div>
+
             <div id="admin-fields" style="display:none;">
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="activo" name="activo">
