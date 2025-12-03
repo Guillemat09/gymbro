@@ -38,27 +38,51 @@
 {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
 
 {# BUSCADOR SENCILLO (GET ?q=) #}
-<form method="get" class="row g-2 mb-3">
-  <input type="hidden" name="per_page" value="{{ per_page }}">
-  <input type="hidden" name="page" value="1">
-  <div class="col-sm-8 col-md-6">
-    <input type="search"
-           class="form-control"
-           name="q"
-           value="{{ q|default('') }}"
-           placeholder="Buscar por clase, profesor o alumno"
-           autocomplete="off">
-  </div>
-  <div class="col-auto">
-    <button class="btn btn-outline-secondary" type="submit">
-      <i class="bi bi-search"></i>
-      Buscar
-    </button>
-  </div>
-</form>
-
+{# ===== NUEVA ZONA DE FILTRADO (estilo unificado) ===== #}
 <div class="row g-2 align-items-end mb-3">
-    <div class="col-12 col-lg-4 d-flex align-items-center ms-auto">
+    <div class="col-12 col-lg-8">
+        <form method="get" id="filter-form" class="row g-2">
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            <input type="hidden" name="page" value="1">
+
+            {# --- Campo Buscar --- #}
+            <div class="col-sm-2 col-md-3">
+                <label for="q" class="form-label mb-0">Buscar</label>
+                <input type="text"
+                       class="form-control"
+                       id="q"
+                       name="q"
+                       value="{{ q }}"
+                       placeholder="clase, profesor o alumno">
+            </div>
+
+            {# --- Botón Filtrar --- #}
+            <div class="col-sm-2 col-md-3 d-flex align-items-end">
+                <button class="btn btn-secondary d-flex align-items-center justify-content-center px-2"
+                        style="height: 38px; width: 100%;"
+                        type="submit">
+                    <i class="bi bi-funnel me-1"></i>
+                    <i class="bi bi-search me-2"></i>
+                    Filtrar
+                </button>
+            </div>
+
+            {# --- Botón Quitar Filtrado --- #}
+            <div class="col-sm-3 col-md-3 d-flex align-items-end justify-content-end">
+                {% if q %}
+                <a href="{{ path('app_reserva') }}"
+                   class="btn btn-outline-secondary d-flex align-items-center justify-content-center px-2"
+                   style="height: 38px; width: 100%;">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Quitar filtrado
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {# === Selector per_page === #}
+    <div class="col-12 col-lg-4 d-flex align-items-center">
         <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
             {% for k, v in app.request.query.all %}
                 {% if k not in ['per_page', 'page'] %}
