@@ -29,7 +29,7 @@ final class EjercicioController extends AbstractController
 
         $qb = $em->getRepository(Ejercicio::class)->createQueryBuilder('e');
         if ($q !== '') {
-            $qb->andWhere('LOWER(e.nombre) LIKE :q OR LOWER(e.descripcion) LIKE :q OR LOWER(e.musculoPrincipal) LIKE :q')
+            $qb->andWhere('LOWER(e.nombre) LIKE :q OR LOWER(e.descripcion) LIKE :q OR LOWER(e.musculo_principal) LIKE :q')
                ->setParameter('q', '%'.mb_strtolower($q).'%');
         }
         $qb->orderBy('e.id', 'ASC');

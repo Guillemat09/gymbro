@@ -10,7 +10,17 @@
     {% endfor %}
 
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
-    <a href="{{ path('ejercicio_nuevo') }}" class="btn btn-success mb-3">Nuevo ejercicio</a>
+ <div class="text-end mb-3">
+    <a href="{{ path('ejercicio_nuevo') }}" class="btn btn-primary btn-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+             class="me-1" viewBox="0 0 16 16">
+          <path d="M1 6h1V4h2v2h6V4h2v2h1v4h-1v2h-2V10H4v2H2V10H1V6zm4 0V4H3v2h2zm6 0h2V4h-2v2z"/>
+        </svg>
+        Nuevo ejercicio
+    </a>
+</div>
+
+
 
     {% set persistedQuery = {} %}
     {% for k, v in app.request.query.all %}
@@ -29,14 +39,29 @@
                     <label for="q" class="form-label mb-0">Buscar</label>
                     <input type="text" class="form-control" id="q" name="q" value="{{ q }}" placeholder="nombre, descripción o músculo">
                 </div>
-                <div class="col-sm-6 col-md-3 d-grid">
-                    <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>
-                </div>
-                <div class="col-sm-6 col-md-3 d-grid">
-                    {% if q %}
-                        <a class="btn btn-outline-secondary btn-lg w-100" href="{{ path('app_ejercicio') }}">Quitar filtrado</a>
-                    {% endif %}
-                </div>
+               {# === BOTÓN FILTRAR (2 col) === #}
+<div class="col-sm-2 d-flex align-items-end">
+    <button class="btn btn-secondary d-flex align-items-center justify-content-center px-2"
+            style="height: 38px; width: 100%;"
+            type="submit">
+        <i class="bi bi-funnel me-1"></i>
+        <i class="bi bi-lightning me-2"></i>
+        Filtrar
+    </button>
+</div>
+
+{# === BOTÓN QUITAR FILTRADO (2 col) === #}
+<div class="col-sm-2 d-flex align-items-end justify-content-end">
+    {% if q %}
+        <a href="{{ path('app_ejercicio') }}"
+           class="btn btn-outline-secondary d-flex align-items-center justify-content-center px-2"
+           style="height: 38px; width: 100%;">
+            <i class="bi bi-x-circle me-2"></i>
+            Quitar filtro
+        </a>
+    {% endif %}
+</div>
+
             </form>
         </div>
         <div class="col-12 col-lg-4 d-flex align-items-center">

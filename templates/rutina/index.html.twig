@@ -10,7 +10,11 @@
     {% endfor %}
 
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
-    <a href="{{ path('rutina_nueva') }}" class="btn btn-success mb-3">Nueva rutina</a>
+   <div class="text-end mb-3">
+    <a href="{{ path('rutina_nueva') }}" class="btn btn-primary btn-lg">
+        <i class="bi bi-clipboard-plus me-1"></i> Nueva rutina
+    </a>
+</div>
 
     {# ——— Query escalar para la paginación (evita "Array to string conversion") ——— #}
     {% set persistedQuery = {} %}
@@ -22,41 +26,59 @@
     {% set persistedQuery = persistedQuery|merge({'per_page': per_page}) %}
 
     {# ====== Filtros + per_page (sin paginación superior) ====== #}
-    <div class="row g-2 align-items-end mb-3">
-        <div class="col-12 col-xxl-9">
-            <form method="get" id="filter-form" class="row g-2">
-                <input type="hidden" name="per_page" value="{{ per_page }}">
-                <input type="hidden" name="page" value="1">
+   <div class="row g-2 align-items-end mb-3">
+    <div class="col-12 col-xxl-9">
+        <form method="get" id="filter-form" class="row g-2">
 
-                <div class="col-sm-6 col-md-5">
-                    <label for="q" class="form-label mb-0">Buscar</label>
-                    <input type="text" class="form-control" id="q" name="q" value="{{ q }}" placeholder="rutina o alumno">
-                </div>
+            <input type="hidden" name="per_page" value="{{ per_page }}">
+            <input type="hidden" name="page" value="1">
 
-                <div class="col-sm-6 col-md-4">
-                    <label for="alumno_id" class="form-label mb-0">Alumno</label>
-                    <select id="alumno_id" name="alumno_id" class="form-select">
-                        <option value="0">— Todos —</option>
-                        {% for al in alumnos %}
-                            {% set nombre = al.usuario ? al.usuario.nombre ~ ' ' ~ al.usuario.apellido1 ~ (al.usuario.apellido2 ? ' ' ~ al.usuario.apellido2 : '') : 'Sin nombre' %}
-                            <option value="{{ al.id }}" {{ al.id == alumno_id ? 'selected' : '' }}>
-                                {{ nombre }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
+            {# === BUSCAR (4 col) === #}
+            <div class="col-sm-4">
+                <label for="q" class="form-label mb-0">Buscar</label>
+                <input type="text" class="form-control" id="q" name="q"
+                       value="{{ q }}" placeholder="rutina o alumno">
+            </div>
 
-                <div class="col-sm-3 col-md-2 d-grid">
-                    <button class="btn btn-primary" type="submit">Filtrar</button>
-                </div>
+            {# === ALUMNO (4 col) === #}
+            <div class="col-sm-4">
+                <label for="alumno_id" class="form-label mb-0">Alumno</label>
+                <select id="alumno_id" name="alumno_id" class="form-select">
+                    <option value="0">— Todos —</option>
+                    {% for al in alumnos %}
+                        {% set nombre = al.usuario ? al.usuario.nombre ~ ' ' ~ al.usuario.apellido1 ~ (al.usuario.apellido2 ? ' ' ~ al.usuario.apellido2 : '') : 'Sin nombre' %}
+                        <option value="{{ al.id }}" {{ al.id == alumno_id ? 'selected' : '' }}>
+                            {{ nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-                <div class="col-sm-3 col-md-2 d-grid">
-                    {% if q or alumno_id %}
-                        <a class="btn btn-outline-secondary" href="{{ path('app_rutina') }}">Limpiar</a>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
+            {# === BOTÓN FILTRAR (2 col) === #}
+            <div class="col-sm-2 d-flex align-items-end">
+                <button class="btn btn-secondary d-flex align-items-center justify-content-center px-2"
+                        style="height: 38px; width: 100%;"
+                        type="submit">
+                    <i class="bi bi-funnel me-1"></i>
+                    <i class="bi bi-calendar-event me-2"></i>
+                    Filtrar
+                </button>
+            </div>
+
+            {# === BOTÓN LIMPIAR (2 col) === #}
+            <div class="col-sm-2 d-flex align-items-end justify-content-end">
+                {% if q or alumno_id %}
+                    <a href="{{ path('app_rutina') }}"
+                       class="btn btn-outline-secondary d-flex align-items-center justify-content-center px-2"
+                       style="height: 38px; width: 100%;">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Quitar filtro
+                    </a>
+                {% endif %}
+            </div>
+
+        </form>
+    </div>
 
         <div class="col-6 col-xxl-3 d-flex align-items-center">
             <form method="get" id="per-page-form" class="d-flex align-items-center ms-auto">
