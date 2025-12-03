@@ -10,7 +10,12 @@
     {% endfor %}
 
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
-    <a href="{{ path('clase_nueva') }}" class="btn btn-success btn-lg mb-3">Nueva clase</a>
+   <div class="text-end mb-3">
+    <a href="{{ path('clase_nueva') }}" class="btn btn-primary btn-lg">
+        <i class="bi bi-calendar-plus me-1"></i> Nueva clase
+    </a>
+</div>
+
 
     {# Persistencia de query para paginación #}
     {% set persistedQuery = {} %}
@@ -28,7 +33,7 @@
             <input type="hidden" name="per_page" value="{{ per_page }}">
             <input type="hidden" name="page" value="1">
 
-            <div class="col-sm-6">
+            <div class="col-sm-4 col-md-3">
                 <label for="q" class="form-label mb-0">Nombre de clase</label>
                 <input type="text"
                        class="form-control"
@@ -38,7 +43,7 @@
                        placeholder="Ej: Body Pump, Yoga...">
             </div>
 
-            <div class="col-sm-6">
+            <div class="col-sm-4 col-md-3">
                 <label for="profesor" class="form-label mb-0">Profesor</label>
                 <input type="text"
                        class="form-control"
@@ -48,17 +53,32 @@
                        placeholder="Nombre o apellidos del profesor">
             </div>
 
-            <div class="col-sm-6 col-md-3 d-grid">
-                <button class="btn btn-primary btn-lg w-100" type="submit">Filtrar</button>
-            </div>
+       <div class="col-sm-3 col-md-3 d-flex align-items-end">
 
-            <div class="col-sm-6 col-md-3 d-grid">
-                {% if q or profesor %}
-                    <a class="btn btn-outline-secondary btn-lg w-100" href="{{ path('app_clase') }}">
-                        Quitar filtrado
-                    </a>
-                {% endif %}
-            </div>
+    <button class="btn btn-secondary d-flex align-items-center justify-content-center px-2"
+            style="height: 38px; width: 100%;"
+            type="submit">
+        <i class="bi bi-funnel me-1"></i>
+        <i class="bi bi-calendar-event me-2"></i>
+        Filtrar
+    </button>
+
+</div>
+
+
+<div class="col-sm-3 col-md-3 d-flex align-items-end justify-content-end">
+
+    {% if q or profesor %}
+        <a class="btn btn-outline-secondary d-flex align-items-center justify-content-center px-2"
+           style="height: 38px; width: 100%;"
+           href="{{ path('app_clase') }}">
+            <i class="bi bi-x-circle me-2"></i>
+            Quitar filtrado
+        </a>
+    {% endif %}
+
+</div>
+
         </form>
     </div>
 
