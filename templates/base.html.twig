@@ -191,35 +191,45 @@ footer small.text-muted {
 /* ==============================
       FORMULARIOS (NUEVO / EDITAR / VER)
    ============================== */
+/* ==== FORMULARIOS: NUEVO / EDITAR / VER ==== */
 .card {
-    background: #ffffff !important;
+    background: #f8f9fa !important; /* blanco suave */
     color: #000 !important;
-    border: 1px solid #ddd !important;
+    border: 1px solid #dcdcdc !important;
     border-radius: 12px;
     padding: 1.5rem;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.10); /* sombra suave */
 }
-.card label {
-    color: #000 !important;
-}
+
+/* Inputs con blanco suave */
 .card input,
 .card select,
 .card textarea {
-    background: #fff !important;
+    background: #ffffff !important; /* blanco normal */
     color: #000 !important;
-    border: 1px solid #ced4da !important;
+    border: 1px solid #cfcfcf !important;
 }
+
+/* Labels más visibles */
+.card label {
+    color: #444 !important;
+}
+
 
 /* ==============================
       TEXTOS DE LA ZONA SUPERIOR (FILTROS + CABECERAS)
    ============================== */
-.container label,
-.container .form-label,
-.container .text-muted,
-.container h1,
-.container h2 {
-    color: #ffffff !important;
+/* Textos blancos SOLO para páginas con tablas y filtros */
+body:not(.form-page) .container label,
+body:not(.form-page) .container .form-label,
+body:not(.form-page) .container .text-muted,
+body:not(.form-page) .container h1,
+body:not(.form-page) .container h2 {
+    color: #fffffffb !important;
     text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
+
+
 
 </style>
 
