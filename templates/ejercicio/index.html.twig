@@ -225,15 +225,16 @@
 
 
     <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
-            Mostrando
-            {{ ((ejercicios.currentPageNumber - 1) * ejercicios.itemNumberPerPage) + 1 }}
-            -
-            {{ ejercicios.currentPageNumber * ejercicios.itemNumberPerPage > ejercicios.totalItemCount
-                ? ejercicios.totalItemCount
-                : ejercicios.currentPageNumber * ejercicios.itemNumberPerPage }}
-            de {{ ejercicios.totalItemCount }} ejercicios
-        </div>
+<div style="color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.7);">
+    Mostrando
+    {{ ((ejercicios.currentPageNumber - 1) * ejercicios.itemNumberPerPage) + 1 }}
+    -
+    {{ ejercicios.currentPageNumber * ejercicios.itemNumberPerPage > ejercicios.totalItemCount
+        ? ejercicios.totalItemCount
+        : ejercicios.currentPageNumber * ejercicios.itemNumberPerPage }}
+    de {{ ejercicios.totalItemCount }} ejercicios
+</div>
+
         <div>
             {% set page = ejercicios.currentPageNumber %}
             {% set last = ejercicios.pageCount %}

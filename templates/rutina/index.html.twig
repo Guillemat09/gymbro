@@ -248,15 +248,16 @@
 
     {# ====== Resumen + paginación inferior ====== #}
     <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
-            Mostrando
-            {{ ((rutinas.currentPageNumber - 1) * rutinas.itemNumberPerPage) + 1 }}
-            -
-            {{ rutinas.currentPageNumber * rutinas.itemNumberPerPage > rutinas.totalItemCount
-                ? rutinas.totalItemCount
-                : rutinas.currentPageNumber * rutinas.itemNumberPerPage }}
-            de {{ rutinas.totalItemCount }} rutinas
-        </div>
+        <div style="color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.7);">
+    Mostrando
+    {{ ((rutinas.currentPageNumber - 1) * rutinas.itemNumberPerPage) + 1 }}
+    -
+    {{ rutinas.currentPageNumber * rutinas.itemNumberPerPage > rutinas.totalItemCount
+        ? rutinas.totalItemCount
+        : rutinas.currentPageNumber * rutinas.itemNumberPerPage }}
+    de {{ rutinas.totalItemCount }} rutinas
+</div>
+
 
         {# ====== Solo paginación inferior ====== #}
         <div>

@@ -179,16 +179,16 @@
     </table>
 
     {# ====== Resumen + paginación inferior ====== #}
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div>
-            Mostrando
-            {{ ((usuarios.currentPageNumber - 1) * usuarios.itemNumberPerPage) + 1 }}
-            -
-            {{ usuarios.currentPageNumber * usuarios.itemNumberPerPage > usuarios.totalItemCount
-                ? usuarios.totalItemCount
-                : usuarios.currentPageNumber * usuarios.itemNumberPerPage }}
-            de {{ usuarios.totalItemCount }} usuarios
-        </div>
+ <div style="color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.7);">
+    Mostrando
+    {{ ((usuarios.currentPageNumber - 1) * usuarios.itemNumberPerPage) + 1 }}
+    -
+    {{ usuarios.currentPageNumber * usuarios.itemNumberPerPage > usuarios.totalItemCount
+        ? usuarios.totalItemCount
+        : usuarios.currentPageNumber * usuarios.itemNumberPerPage }}
+    de {{ usuarios.totalItemCount }} usuarios
+</div>
+
 
         <div>
             {% set page = usuarios.currentPageNumber %}

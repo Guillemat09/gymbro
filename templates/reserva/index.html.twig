@@ -266,15 +266,16 @@
 
 {# ====== Resumen + paginación inferior ====== #}
 <div class="d-flex justify-content-between align-items-center mt-3">
-    <div>
-        Mostrando
-        {{ ((reservas.currentPageNumber - 1) * reservas.itemNumberPerPage) + 1 }}
-        -
-        {{ reservas.currentPageNumber * reservas.itemNumberPerPage > reservas.totalItemCount
-            ? reservas.totalItemCount
-            : reservas.currentPageNumber * reservas.itemNumberPerPage }}
-        de {{ reservas.totalItemCount }} reservas
-    </div>
+<div style="color: white; text-shadow: 0 1px 3px rgba(0,0,0,0.7);">
+    Mostrando
+    {{ ((reservas.currentPageNumber - 1) * reservas.itemNumberPerPage) + 1 }}
+    -
+    {{ reservas.currentPageNumber * reservas.itemNumberPerPage > reservas.totalItemCount
+        ? reservas.totalItemCount
+        : reservas.currentPageNumber * reservas.itemNumberPerPage }}
+    de {{ reservas.totalItemCount }} reservas
+</div>
+
     <div>
         {% set page = reservas.currentPageNumber %}
         {% set last = reservas.pageCount %}
