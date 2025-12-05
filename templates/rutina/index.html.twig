@@ -192,20 +192,9 @@
 
                                 <div class="modal-body">
                                     ¿Eliminar la rutina <strong>{{ rutina.nombre }}</strong>?
-                                    <ul class="mt-2">
-                                        <li>
-                                            <strong>Alumno:</strong>
-                                            {% if rutina.alumno and rutina.alumno.usuario %}
-                                                {{ rutina.alumno.usuario.nombre }}
-                                                {{ rutina.alumno.usuario.apellido1 }}
-                                                {% if rutina.alumno.usuario.apellido2 %}
-                                                    {{ rutina.alumno.usuario.apellido2 }}
-                                                {% endif %}
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </li>
-                                    </ul>
+                                   <div class="mt-2">
+                                </div>
+
                                 </div>
 
                                 <div class="modal-footer">

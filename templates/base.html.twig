@@ -15,6 +15,7 @@
         {% endblock %}
 
 <style>
+{% set route = app.request.attributes.get('_route') %}
 /* ==============================
       HERO (ENCABEZADO)
    ============================== */
@@ -79,8 +80,6 @@ body::before {
     opacity: 1;
     transition: opacity 0.5s ease-in-out;
 }
-
-{% set route = app.request.attributes.get('_route') %}
 
 {% if route starts with 'app_usuario' %}
     body {
@@ -219,16 +218,25 @@ footer small.text-muted {
 /* ==============================
       TEXTOS DE LA ZONA SUPERIOR (FILTROS + CABECERAS)
    ============================== */
-/* Textos blancos SOLO para páginas con tablas y filtros */
-body:not(.form-page) .container label,
-body:not(.form-page) .container .form-label,
-body:not(.form-page) .container .text-muted,
-body:not(.form-page) .container h1,
-body:not(.form-page) .container h2 {
-    color: #fffffffb !important;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+/* ==== Texto oscuro cuando NO hay imagen de fondo ==== */
+body:not(.has-bg-image) .container label,
+body:not(.has-bg-image) .container .form-label,
+body:not(.has-bg-image) .container .text-muted,
+body:not(.has-bg-image) .container h1,
+body:not(.has-bg-image) .container h2 {
+    color: #222 !important;
+    text-shadow: none !important;
 }
 
+/* ==== Texto blanco cuando SÍ hay imagen de fondo ==== */
+body.has-bg-image .container label,
+body.has-bg-image .container .form-label,
+body.has-bg-image .container .text-muted,
+body.has-bg-image .container h1,
+body.has-bg-image .container h2 {
+    color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+}
 
 
 </style>
@@ -236,7 +244,14 @@ body:not(.form-page) .container h2 {
 
     </head>
 
-    <body>
+    <body class="{% if route starts with 'app_usuario'
+               or route starts with 'app_clase'
+               or route starts with 'app_reserva'
+               or route starts with 'app_rutina'
+               or route starts with 'app_ejercicio' %}
+                 has-bg-image
+               {% endif %}">
+
         <header class="hero">
             <h1 class="hero-title">GYMBRO</h1>
         </header>
