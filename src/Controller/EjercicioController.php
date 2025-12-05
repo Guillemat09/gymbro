@@ -164,18 +164,30 @@ final class EjercicioController extends AbstractController
     }
 
     #[Route('/ejercicio/{id}/eliminar', name: 'ejercicio_eliminar', methods: ['POST'])]
-    public function eliminar(int $id, EntityManagerInterface $em): Response
-    {
-        $ejercicio = $em->getRepository(Ejercicio::class)->find($id);
+public function eliminar(int $id, EntityManagerInterface $em): Response
+{
+    $ejercicio = $em->getRepository(Ejercicio::class)->find($id);
 
-        if (!$ejercicio) {
-            throw $this->createNotFoundException('Ejercicio no encontrado');
-        }
+    if (!$ejercicio) {
+        throw $this->createNotFoundException('Ejercicio no encontrado');
+    }
 
-        $em->remove($ejercicio);
-        $em->flush();
-        $this->addFlash('success', 'Ejercicio eliminado correctamente.');
+    // 🔍 Comprobar si el ejercicio está en alguna rutina
+    $estaEnRutina = $em->getRepository(\App\Entity\RutinaEjercicios::class)
+                       ->findBy(['ejercicio' => $ejercicio]);
 
+    if ($estaEnRutina) {
+        $this->addFlash('danger', 'No puedes eliminar este ejercicio porque pertenece a una rutina.');
         return $this->redirectToRoute('app_ejercicio');
     }
+
+    // Si no pertenece a ninguna rutina, se elimina con normalidad
+    $em->remove($ejercicio);
+    $em->flush();
+
+    $this->addFlash('success', 'Ejercicio eliminado correctamente.');
+
+    return $this->redirectToRoute('app_ejercicio');
+}
+
 }

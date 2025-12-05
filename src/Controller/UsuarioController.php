@@ -16,6 +16,8 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use App\Entity\Alumno;
 use App\Entity\Profesor;
 use App\Entity\Administrador;
+use App\Entity\Clase;
+use App\Entity\Reserva;
 use Knp\Component\Pager\PaginatorInterface;
 
 class UsuarioController extends AbstractController
@@ -308,36 +310,81 @@ class UsuarioController extends AbstractController
         ]);
     }
 
-    #[Route('/usuario/{id}/eliminar', name: 'usuario_eliminar', methods: ['POST'])]
-    public function eliminar(int $id, EntityManagerInterface $em): Response
-    {
-        $usuario = $em->getRepository(Usuario::class)->find($id);
+#[Route('/usuario/{id}/eliminar', name: 'usuario_eliminar', methods: ['POST'])]
+public function eliminar(int $id, EntityManagerInterface $em): Response
+{
+    $usuario = $em->getRepository(Usuario::class)->find($id);
 
-        if (!$usuario) {
-            throw $this->createNotFoundException('Usuario no encontrado');
-        }
-
-        // Eliminar registro asociado según el tipo
-        if ($usuario->getTipo() === 'alumno' && method_exists($usuario, 'getAlumno')) {
-            $alumno = $usuario->getAlumno();
-            if ($alumno) {
-                $em->remove($alumno);
-            }
-        } elseif ($usuario->getTipo() === 'profesor' && method_exists($usuario, 'getProfesor')) {
-            $profesor = $usuario->getProfesor();
-            if ($profesor) {
-                $em->remove($profesor);
-            }
-        } elseif ($usuario->getTipo() === 'administrador' && method_exists($usuario, 'getAdministrador')) {
-            $admin = $usuario->getAdministrador();
-            if ($admin) {
-                $em->remove($admin);
-            }
-        }
-
-        $em->remove($usuario);
-        $em->flush();
-
-        return $this->redirectToRoute('app_usuario');
+    if (!$usuario) {
+        throw $this->createNotFoundException('Usuario no encontrado');
     }
+
+    // ============================================
+    // 🔍 1. COMPROBAR SI EL USUARIO ESTÁ ASOCIADO A CLASES
+    // ============================================
+
+    // Caso PROFESOR → revisar clases donde es profesor
+    if ($usuario->getTipo() === 'profesor' && method_exists($usuario, 'getProfesor')) {
+        $profesor = $usuario->getProfesor();
+        
+        if ($profesor) {
+            $clases = $em->getRepository(Clase::class)->findBy(['profesor' => $profesor]);
+
+            if (count($clases) > 0) {
+                $this->addFlash('danger', 
+                    'No se puede eliminar este usuario porque está asociado a clases como profesor.'
+                );
+                return $this->redirectToRoute('app_usuario');
+            }
+        }
+    }
+
+    // Caso ALUMNO → revisar reservas
+    if ($usuario->getTipo() === 'alumno' && method_exists($usuario, 'getAlumno')) {
+        $alumno = $usuario->getAlumno();
+        
+        if ($alumno) {
+            $reservas = $em->getRepository(Reserva::class)->findBy(['alumno' => $alumno]);
+
+            if (count($reservas) > 0) {
+                $this->addFlash('danger', 
+                    'No se puede eliminar este usuario porque tiene reservas en clases.'
+                );
+                return $this->redirectToRoute('app_usuario');
+            }
+        }
+    }
+
+    // ============================================
+    // 🔥 2. ELIMINAR REGISTROS ASOCIADOS SEGÚN EL TIPO
+    // ============================================
+
+    if ($usuario->getTipo() === 'alumno' && method_exists($usuario, 'getAlumno')) {
+        if ($alumno = $usuario->getAlumno()) {
+            $em->remove($alumno);
+        }
+    } 
+    elseif ($usuario->getTipo() === 'profesor' && method_exists($usuario, 'getProfesor')) {
+        if ($profesor = $usuario->getProfesor()) {
+            $em->remove($profesor);
+        }
+    }
+    elseif ($usuario->getTipo() === 'administrador' && method_exists($usuario, 'getAdministrador')) {
+        if ($admin = $usuario->getAdministrador()) {
+            $em->remove($admin);
+        }
+    }
+
+    // ============================================
+    // ✔ 3. ELIMINAR USUARIO
+    // ============================================
+    $em->remove($usuario);
+    $em->flush();
+
+    // Mensaje de éxito
+    $this->addFlash('success', 'Usuario eliminado correctamente.');
+
+    return $this->redirectToRoute('app_usuario');
+}
+
 }

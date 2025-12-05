@@ -5,6 +5,12 @@
 
 {% block body %}
     <h1 class="display-4 mb-3">{{ titulo }}</h1>
+    {% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ label }} mt-2">{{ message|raw }}</div>
+    {% endfor %}
+{% endfor %}
+
     <div class="text-end mb-3">
     <a href="{{ path('usuario_nuevo') }}" class="btn btn-primary btn-lg">
         <i class="bi bi-person-plus me-1"></i> Nuevo usuario
