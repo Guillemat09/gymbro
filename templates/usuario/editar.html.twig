@@ -35,20 +35,34 @@
             {% if usuario.tipo == 'alumno' and usuario.alumno %}
                 <hr>
                 <h5>Datos de Alumno</h5>
+                {# Campo de fecha de nacimiento #}
                 <div class="mb-3">
                     <label for="fechaNacimiento" class="form-label">Fecha de nacimiento</label>
                     <input type="date" id="fechaNacimiento" name="fechaNacimiento" class="form-control"
-                        value="{{ usuario.alumno.fechaNacimiento ? usuario.alumno.fechaNacimiento|date('Y-m-d') : '' }}">
+                        value="{{ app.request.request.get('fechaNacimiento') ?? usuario.alumno.fechaNacimiento|date('Y-m-d') }}">
+                    {% if errores.fechaNacimiento is defined %}
+                        <div class="text-danger small">{{ errores.fechaNacimiento }}</div>
+                    {% endif %}
                 </div>
+
+                {# Campo de peso #}
                 <div class="mb-3">
                     <label for="peso" class="form-label">Peso (kg)</label>
                     <input type="number" id="peso" name="peso" class="form-control"
-                        value="{{ usuario.alumno.peso }}">
+                        value="{{ app.request.request.get('peso') ?? usuario.alumno.peso }}">
+                    {% if errores.peso is defined %}
+                        <div class="text-danger small">{{ errores.peso }}</div>
+                    {% endif %}
                 </div>
+
+                {# Campo de altura #}
                 <div class="mb-3">
                     <label for="altura" class="form-label">Altura (cm)</label>
                     <input type="number" id="altura" name="altura" class="form-control"
-                        value="{{ usuario.alumno.altura }}">
+                        value="{{ app.request.request.get('altura') ?? usuario.alumno.altura }}">
+                    {% if errores.altura is defined %}
+                        <div class="text-danger small">{{ errores.altura }}</div>
+                    {% endif %}
                 </div>
                 <div class="mb-3">
                     <label for="sexo" class="form-label">Sexo</label>

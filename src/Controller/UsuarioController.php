@@ -142,8 +142,31 @@ class UsuarioController extends AbstractController
                 $peso = $request->request->get('peso');
                 $altura = $request->request->get('altura');
                 $sexo = $request->request->get('sexo');
-                if (!$fechaNacimiento || !$peso || !$altura) {
-                    $errores['alumno'] = 'Debes introducir fecha de nacimiento, peso y altura para un alumno.';
+
+                // Validar fecha de nacimiento
+                if (!$fechaNacimiento) {
+                    $errores['fechaNacimiento'] = 'La fecha de nacimiento es obligatoria.';
+                } else {
+                    $fechaNacimientoObj = \DateTime::createFromFormat('Y-m-d', $fechaNacimiento);
+                    if (!$fechaNacimientoObj) {
+                        $errores['fechaNacimiento'] = 'La fecha de nacimiento no es válida.';
+                    } elseif ($fechaNacimientoObj >= new \DateTime('-10 years')) {
+                        $errores['fechaNacimiento'] = 'El alumno debe tener al menos 10 años.';
+                    }
+                }
+
+                // Validar peso
+                if (!$peso || !is_numeric($peso)) {
+                    $errores['peso'] = 'El peso es obligatorio y debe ser un número.';
+                } elseif ($peso < 40 || $peso > 200) {
+                    $errores['peso'] = 'El peso debe estar entre 40 y 200 kg.';
+                }
+
+                // Validar altura
+                if (!$altura || !is_numeric($altura)) {
+                    $errores['altura'] = 'La altura es obligatoria y debe ser un número.';
+                } elseif ($altura < 50 || $altura > 300) {
+                    $errores['altura'] = 'La altura debe estar entre 50 cm y 300 cm.';
                 }
             } elseif ($tipo === 'profesor') {
                 $especialidad = $request->request->get('especialidad');
@@ -152,7 +175,6 @@ class UsuarioController extends AbstractController
                 }
             } elseif ($tipo === 'administrador') {
                 // No hay campos extra obligatorios, pero se debe crear el registro admin
-                // (el checkbox activo puede ser opcional)
             } else {
                 $errores['tipo'] = 'Debes seleccionar un tipo de usuario válido.';
             }
@@ -237,14 +259,13 @@ class UsuarioController extends AbstractController
                 'required' => false,
                 'attr' => ['class' => 'form-control'],
             ])
-           ->add('password', PasswordType::class, [
-    'label' => 'Contraseña',
-    'required' => false,
-    'mapped' => false,          // <-- evita que se sobrescriba directamente en el entity
-    'empty_data' => '',         // <-- evita que Symfony meta null si no hay input
-    'attr' => ['class' => 'form-control', 'autocomplete' => 'new-password'],
-])
-
+            ->add('password', PasswordType::class, [
+                'label' => 'Contraseña',
+                'required' => false,
+                'mapped' => false,
+                'empty_data' => '',
+                'attr' => ['class' => 'form-control', 'autocomplete' => 'new-password'],
+            ])
             ->add('guardar', SubmitType::class, [
                 'label' => 'Guardar cambios',
                 'attr' => ['class' => 'btn btn-primary mt-3'],
@@ -272,17 +293,48 @@ class UsuarioController extends AbstractController
                 $errores['password'] = 'La contraseña debe tener al menos 4 caracteres.';
             }
 
+            // Validaciones específicas para el tipo alumno
+            if ($usuario->getTipo() === 'alumno') {
+                $fechaNacimiento = $request->request->get('fechaNacimiento');
+                $peso = $request->request->get('peso');
+                $altura = $request->request->get('altura');
+                $sexo = $request->request->get('sexo');
+
+                // Validar fecha de nacimiento
+                if (!$fechaNacimiento) {
+                    $errores['fechaNacimiento'] = 'La fecha de nacimiento es obligatoria.';
+                } else {
+                    $fechaNacimientoObj = \DateTime::createFromFormat('Y-m-d', $fechaNacimiento);
+                    if (!$fechaNacimientoObj) {
+                        $errores['fechaNacimiento'] = 'La fecha de nacimiento no es válida.';
+                    } elseif ($fechaNacimientoObj >= new \DateTime('-10 years')) {
+                        $errores['fechaNacimiento'] = 'El alumno debe tener al menos 10 años.';
+                    }
+                }
+
+                // Validar peso
+                if (!$peso || !is_numeric($peso)) {
+                    $errores['peso'] = 'El peso es obligatorio y debe ser un número.';
+                } elseif ($peso < 40 || $peso > 200) {
+                    $errores['peso'] = 'El peso debe estar entre 40 y 200 kg.';
+                }
+
+                // Validar altura
+                if (!$altura || !is_numeric($altura)) {
+                    $errores['altura'] = 'La altura es obligatoria y debe ser un número.';
+                } elseif ($altura < 50 || $altura > 300) {
+                    $errores['altura'] = 'La altura debe estar entre 50 cm y 300 cm.';
+                }
+            }
+
             if ($form->isValid() && !$errores) {
                 if (!empty($password)) {
-        $usuario->setPassword($password);  // <-- No se hashea
-    }
+                    $usuario->setPassword($password); // No se hashea aquí, pero debería hacerse
+                }
+
                 // Actualiza los datos adicionales según el tipo
                 if ($usuario->getTipo() === 'alumno' && $usuario->getAlumno()) {
                     $alumno = $usuario->getAlumno();
-                    $fechaNacimiento = $request->request->get('fechaNacimiento');
-                    $peso = $request->request->get('peso');
-                    $altura = $request->request->get('altura');
-                    $sexo = $request->request->get('sexo');
                     if ($fechaNacimiento) $alumno->setFechaNacimiento(new \DateTime($fechaNacimiento));
                     if ($peso) $alumno->setPeso((int)$peso);
                     if ($altura) $alumno->setAltura((int)$altura);

@@ -32,12 +32,6 @@
                 <div class="text-danger small">{{ errores.apellido2 }}</div>
             {% endif %}
             {{ form_row(form.tipo) }}
-            {% if errores.alumno is defined %}
-                <div class="text-danger small">{{ errores.alumno }}</div>
-            {% endif %}
-            {% if errores.profesor is defined %}
-                <div class="text-danger small">{{ errores.profesor }}</div>
-            {% endif %}
             {% if errores.tipo is defined %}
                 <div class="text-danger small">{{ errores.tipo }}</div>
             {% endif %}
@@ -46,14 +40,23 @@
                 <div class="mb-3">
                     <label for="fechaNacimiento" class="form-label">Fecha de nacimiento</label>
                     <input type="date" id="fechaNacimiento" name="fechaNacimiento" class="form-control">
+                    {% if errores.fechaNacimiento is defined %}
+                        <div class="text-danger small">{{ errores.fechaNacimiento }}</div>
+                    {% endif %}
                 </div>
                 <div class="mb-3">
                     <label for="peso" class="form-label">Peso (kg)</label>
                     <input type="number" id="peso" name="peso" class="form-control">
+                    {% if errores.peso is defined %}
+                        <div class="text-danger small">{{ errores.peso }}</div>
+                    {% endif %}
                 </div>
                 <div class="mb-3">
                     <label for="altura" class="form-label">Altura (cm)</label>
                     <input type="number" id="altura" name="altura" class="form-control">
+                    {% if errores.altura is defined %}
+                        <div class="text-danger small">{{ errores.altura }}</div>
+                    {% endif %}
                 </div>
                 <div class="mb-3">
                     <label for="sexo" class="form-label">Sexo</label>
@@ -70,6 +73,9 @@
                 <div class="mb-3">
                     <label for="especialidad" class="form-label">Especialidad</label>
                     <input type="text" id="especialidad" name="especialidad" class="form-control">
+                    {% if errores.profesor is defined %}
+                        <div class="text-danger small">{{ errores.profesor }}</div>
+                    {% endif %}
                 </div>
             </div>
 
