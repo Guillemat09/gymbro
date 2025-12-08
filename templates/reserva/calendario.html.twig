@@ -100,7 +100,8 @@
 <div class="modal fade" id="classDetailModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header">
+      <!-- Encabezado del modal con color -->
+      <div class="modal-header bg-primary text-white">
         <h5 class="modal-title" id="classModalTitle">Detalle de clase</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -108,20 +109,27 @@
         <div id="classModalLoading" class="d-none">Cargando…</div>
         <div id="classModalError" class="alert alert-danger d-none"></div>
         <dl id="classModalContent" class="row mb-2 d-none">
-          <dt class="col-5">Nombre</dt><dd class="col-7" id="cm-name"></dd>
-          <dt class="col-5">Profesor/a</dt><dd class="col-7" id="cm-teacher"></dd>
-          <dt class="col-5">Fecha</dt><dd class="col-7" id="cm-date"></dd>
-          <dt class="col-5">Horario</dt><dd class="col-7" id="cm-time"></dd>
-          <dt class="col-5">Aforo</dt><dd class="col-7" id="cm-capacity"></dd>
-          <dt class="col-5">Apuntados</dt><dd class="col-7" id="cm-enrolled"></dd>
-          <dt class="col-5">Estado</dt><dd class="col-7" id="cm-status"></dd>
-          <dt class="col-5">Descripción</dt><dd class="col-7" id="cm-description"></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Nombre</dt>
+          <dd class="col-7 ps-3"> <span id="cm-name"></span></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Profesor/a</dt>
+          <dd class="col-7 ps-3" id="cm-teacher"></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Fecha</dt>
+          <dd class="col-7 ps-3" id="cm-date"></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Horario</dt>
+          <dd class="col-7 ps-3" id="cm-time"></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Aforo</dt>
+          <dd class="col-7 ps-3" id="cm-capacity"></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Apuntados</dt>
+          <dd class="col-7 ps-3" id="cm-enrolled"></dd>
+          <dt class="col-5 text-end pe-3 border-end" style="background-color: #f8f9fa;">Estado</dt>
+          <dd class="col-7 ps-3" id="cm-status"></dd>
         </dl>
 
         <!-- Mensajes informativos (lleno / ya reservado) -->
         <p id="classModalInfo" class="alert alert-info d-none mb-0"></p>
       </div>
-      <div class="modal-footer">
+      <!-- Pie del modal con color -->
+      <div class="modal-footer bg-light">
         <!-- Botón de reservar (se oculta si no procede) -->
         <button id="cm-reserveBtn" type="button" class="btn btn-primary d-none">
           Reservar esta clase
