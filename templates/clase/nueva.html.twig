@@ -17,7 +17,20 @@
             {{ form_row(form.nombre) }}
             {{ form_row(form.fecha) }}
             {{ form_row(form.hora) }}
-            {{ form_row(form.duracion) }}
+
+            {# Campo de duración con mensajes de error personalizados #}
+            <div class="mb-3">
+                {{ form_label(form.duracion) }}
+                {{ form_widget(form.duracion, { 'attr': {'class': 'form-control'} }) }}
+                {% if form.duracion.vars.errors|length > 0 %}
+                    <div class="text-danger small">
+                        {% for error in form.duracion.vars.errors %}
+                            {{ error.message }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
             {{ form_row(form.lugar) }}
             {{ form_row(form.limite) }}
 

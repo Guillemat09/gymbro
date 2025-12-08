@@ -226,18 +226,22 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            if ($esProfesor) {
-                // Asegura de nuevo (por si cambió algo)
-                $profesorActual = $this->ensureProfesorActual($em);
-                $clase->setProfesor($profesorActual);
+            if ($clase->getDuracion() < 30) {
+                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración de la clase debe ser de al menos 30 minutos.'));
             }
-            // Si es admin, se respeta el profesor elegido en el formulario
 
-            $em->persist($clase);
-            $em->flush();
+            if ($form->isValid()) {
+                if ($esProfesor) {
+                    $profesorActual = $this->ensureProfesorActual($em);
+                    $clase->setProfesor($profesorActual);
+                }
 
-            $this->addFlash('success', 'Clase creada correctamente.');
-            return $this->redirectToRoute('app_clase');
+                $em->persist($clase);
+                $em->flush();
+
+                $this->addFlash('success', 'Clase creada correctamente.');
+                return $this->redirectToRoute('app_clase');
+            }
         }
 
         return $this->render('clase/nueva.html.twig', [
@@ -255,10 +259,8 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
         }
 
         $esProfesor = $this->isGranted('ROLE_PROFESOR');
-        // Garantiza que exista Profesor si eres ROLE_PROFESOR (con defaults)
         $profesorActual = $this->ensureProfesorActual($em);
 
-        // Si es profesor (no admin), debe ser dueño de la clase
         if ($esProfesor && !$this->isGranted('ROLE_ADMIN')) {
             if (!$profesorActual || $clase->getProfesor()?->getId() !== $profesorActual->getId()) {
                 throw $this->createAccessDeniedException('No puedes editar una clase de otro profesor.');
@@ -309,7 +311,6 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
                 'required' => true,
             ]);
         } else {
-            // Choices: su propio profesor y (por robustez) el ya asociado a la clase
             $choices = [];
             if ($profesorActual) { $choices[] = $profesorActual; }
             if ($clase->getProfesor() && (!$profesorActual || $clase->getProfesor()->getId() !== $profesorActual->getId())) {
@@ -339,19 +340,23 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
         $form = $builder->getForm();
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            if ($esProfesor && !$this->isGranted('ROLE_ADMIN')) {
-                // Solo si es profesor y NO admin, fuerza su propio profesor
-                $profesorActual = $this->ensureProfesorActual($em);
-                $clase->setProfesor($profesorActual);
+        if ($form->isSubmitted()) {
+            if ($clase->getDuracion() < 30) {
+                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración de la clase debe ser de al menos 30 minutos.'));
             }
 
-            $em->flush();
-            $this->addFlash('success', 'Clase actualizada correctamente.');
-            return $this->redirectToRoute('app_clase');
+            if ($form->isValid()) {
+                if ($esProfesor && !$this->isGranted('ROLE_ADMIN')) {
+                    $profesorActual = $this->ensureProfesorActual($em);
+                    $clase->setProfesor($profesorActual);
+                }
+
+                $em->flush();
+                $this->addFlash('success', 'Clase actualizada correctamente.');
+                return $this->redirectToRoute('app_clase');
+            }
         }
 
-        // El mensaje flash solo debe estar dentro del bloque de submit+validación
         return $this->render('clase/editar.html.twig', [
             'form' => $form->createView(),
             'titulo' => 'Editar clase',
