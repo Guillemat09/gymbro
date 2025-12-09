@@ -225,9 +225,31 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
         $form = $builder->getForm();
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            if ($clase->getDuracion() < 30) {
-                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración de la clase debe ser de al menos 30 minutos.'));
+        if ($form->isSubmitted()) {
+            // Validación del lugar
+            if (mb_strlen(trim($clase->getLugar())) < 3) {
+                $form->get('lugar')->addError(new \Symfony\Component\Form\FormError('El lugar debe tener al menos 3 caracteres.'));
+            }
+
+            // Validación de la fecha
+            $fechaHoy = new \DateTime();
+            $fechaMaxima = (new \DateTime())->modify('+3 years');
+            if ($clase->getFecha() < $fechaHoy) {
+                $form->get('fecha')->addError(new \Symfony\Component\Form\FormError('La fecha no puede ser anterior a hoy.'));
+            } elseif ($clase->getFecha() > $fechaMaxima) {
+                $form->get('fecha')->addError(new \Symfony\Component\Form\FormError('La fecha no puede ser superior a 3 años desde hoy.'));
+            }
+
+            // Validación de la duración
+            if ($clase->getDuracion() > 300) {
+                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración no puede ser mayor a 300 minutos.'));
+            } elseif ($clase->getDuracion() < 30) {
+                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración debe ser de al menos 30 minutos.'));
+            }
+
+            // Validación del límite de alumnos
+            if ($clase->getLimite() > 60) {
+                $form->get('limite')->addError(new \Symfony\Component\Form\FormError('El límite de alumnos no puede ser superior a 60.'));
             }
 
             if ($form->isValid()) {
@@ -341,8 +363,25 @@ public function index(EntityManagerInterface $em, Request $request, PaginatorInt
         $form->handleRequest($request);
 
         if ($form->isSubmitted()) {
-            if ($clase->getDuracion() < 30) {
-                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración de la clase debe ser de al menos 30 minutos.'));
+            // Validación de la fecha
+            $fechaHoy = new \DateTime();
+            $fechaMaxima = (new \DateTime())->modify('+3 years');
+            if ($clase->getFecha() < $fechaHoy) {
+                $form->get('fecha')->addError(new \Symfony\Component\Form\FormError('La fecha no puede ser anterior a hoy.'));
+            } elseif ($clase->getFecha() > $fechaMaxima) {
+                $form->get('fecha')->addError(new \Symfony\Component\Form\FormError('La fecha no puede ser superior a 3 años desde hoy.'));
+            }
+
+            // Validación de la duración
+            if ($clase->getDuracion() > 300) {
+                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración no puede ser mayor a 300 minutos.'));
+            } elseif ($clase->getDuracion() < 30) {
+                $form->get('duracion')->addError(new \Symfony\Component\Form\FormError('La duración debe ser de al menos 30 minutos.'));
+            }
+
+            // Validación del límite de alumnos
+            if ($clase->getLimite() > 60) {
+                $form->get('limite')->addError(new \Symfony\Component\Form\FormError('El límite de alumnos no puede ser superior a 60.'));
             }
 
             if ($form->isValid()) {
