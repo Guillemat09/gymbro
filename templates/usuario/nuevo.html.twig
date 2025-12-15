@@ -72,7 +72,19 @@
             <div id="profesor-fields" style="display:none;">
                 <div class="mb-3">
                     <label for="especialidad" class="form-label">Especialidad</label>
-                    <input type="text" id="especialidad" name="especialidad" class="form-control">
+                    <select id="especialidad" name="especialidad" class="form-select" required>
+                        <option value="">Selecciona...</option>
+                        <option value="Funcional Training">Funcional Training</option>
+                        <option value="HIIT (High Intensity Interval Training)">HIIT (High Intensity Interval Training)</option>
+                        <option value="Power Pump">Power Pump</option>
+                        <option value="Spinning / Indoor Cycling">Spinning / Indoor Cycling</option>
+                        <option value="GAP (Glúteos, Abdomen y Piernas)">GAP (Glúteos, Abdomen y Piernas)</option>
+                        <option value="Cross Training">Cross Training</option>
+                        <option value="Core & Abs">Core & Abs</option>
+                        <option value="Stretching y Movilidad">Stretching y Movilidad</option>
+                        <option value="Full Body Workout">Full Body Workout</option>
+                        <option value="Fuerza y Tonificación">Fuerza y Tonificación</option>
+                    </select>
                     {% if errores.profesor is defined %}
                         <div class="text-danger small">{{ errores.profesor }}</div>
                     {% endif %}

@@ -205,6 +205,10 @@ class UsuarioController extends AbstractController
                 }
 
                 $em->flush();
+
+                // Mensaje flash de éxito
+                $this->addFlash('success', 'Usuario creado exitosamente.');
+
                 return $this->redirectToRoute('app_usuario');
             }
         }
@@ -350,6 +354,10 @@ class UsuarioController extends AbstractController
                 }
 
                 $em->flush();
+
+                // Mensaje flash de éxito
+                $this->addFlash('success', 'Usuario editado exitosamente.');
+
                 return $this->redirectToRoute('app_usuario');
             }
         }

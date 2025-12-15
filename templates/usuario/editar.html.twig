@@ -78,8 +78,19 @@
                 <h5>Datos de Profesor</h5>
                 <div class="mb-3">
                     <label for="especialidad" class="form-label">Especialidad</label>
-                    <input type="text" id="especialidad" name="especialidad" class="form-control"
-                        value="{{ usuario.profesor.especialidad }}">
+                    <select id="especialidad" name="especialidad" class="form-select" required>
+                        <option value="">Selecciona...</option>
+                        <option value="Funcional Training" {% if usuario.profesor.especialidad == 'Funcional Training' %}selected{% endif %}>Funcional Training</option>
+                        <option value="HIIT (High Intensity Interval Training)" {% if usuario.profesor.especialidad == 'HIIT (High Intensity Interval Training)' %}selected{% endif %}>HIIT (High Intensity Interval Training)</option>
+                        <option value="Power Pump" {% if usuario.profesor.especialidad == 'Power Pump' %}selected{% endif %}>Power Pump</option>
+                        <option value="Spinning / Indoor Cycling" {% if usuario.profesor.especialidad == 'Spinning / Indoor Cycling' %}selected{% endif %}>Spinning / Indoor Cycling</option>
+                        <option value="GAP (Glúteos, Abdomen y Piernas)" {% if usuario.profesor.especialidad == 'GAP (Glúteos, Abdomen y Piernas)' %}selected{% endif %}>GAP (Glúteos, Abdomen y Piernas)</option>
+                        <option value="Cross Training" {% if usuario.profesor.especialidad == 'Cross Training' %}selected{% endif %}>Cross Training</option>
+                        <option value="Core & Abs" {% if usuario.profesor.especialidad == 'Core & Abs' %}selected{% endif %}>Core & Abs</option>
+                        <option value="Stretching y Movilidad" {% if usuario.profesor.especialidad == 'Stretching y Movilidad' %}selected{% endif %}>Stretching y Movilidad</option>
+                        <option value="Full Body Workout" {% if usuario.profesor.especialidad == 'Full Body Workout' %}selected{% endif %}>Full Body Workout</option>
+                        <option value="Fuerza y Tonificación" {% if usuario.profesor.especialidad == 'Fuerza y Tonificación' %}selected{% endif %}>Fuerza y Tonificación</option>
+                    </select>
                 </div>
 
             {% elseif usuario.tipo == 'administrador' and usuario.administrador %}
